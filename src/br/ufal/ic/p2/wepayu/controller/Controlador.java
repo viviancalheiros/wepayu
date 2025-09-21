@@ -1,19 +1,27 @@
 package br.ufal.ic.p2.wepayu.controller;
 
 import java.beans.XMLEncoder;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Serializable;
+import java.beans.Expression;
+import java.beans.PersistenceDelegate;
 import java.beans.XMLDecoder;
-
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.List;
 
 import br.ufal.ic.p2.wepayu.Exception.Atributo.*;
 import br.ufal.ic.p2.wepayu.Exception.Data.*;
@@ -26,10 +34,12 @@ import br.ufal.ic.p2.wepayu.models.Empregado;
 import br.ufal.ic.p2.wepayu.models.Horista;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.*;
 
-public class Controlador {
+public class Controlador implements Serializable {
     Scanner s = new Scanner(System.in);
     ArrayList<Empregado> empregados = new ArrayList<>();
     Map<String, String> dadosSindicais = new TreeMap<>(); //id, idSindical
+    Map<String, List<String>> folha = new TreeMap<>(); //data, id
+    Map<String, Map<String, String>> folhaPorTipo = new TreeMap<>(); //data -> (tipo, total)
 
     public void iniciarSistema () {
         try {
@@ -46,18 +56,6 @@ public class Controlador {
     public void zerarSistema () {
         empregados.clear();
         dadosSindicais.clear();
-    }
-
-    public void salvarDados () {
-        try {
-            FileOutputStream f = new FileOutputStream("empregados.xml");
-            XMLEncoder encoder = new XMLEncoder(f);
-            encoder.writeObject(empregados);
-            encoder.close();
-            f.close();
-        } catch (Exception e) {
-
-        }
     }
 
     private void verificarEmpregado (Empregado e) {
@@ -389,7 +387,6 @@ public class Controlador {
                 "horista", 
                 converteSalario(e.getSalario())
             );
-            System.out.println(h.getNome() + "mudou");
             h.setId(e.getId());
             return h;
         } else if (novoTipo.equals("comissionado")) {
@@ -604,9 +601,353 @@ public class Controlador {
             return converteSalario(total);
     }
 
-    // public String totalFolha (String data) {
+    public String totalFolha (String data)
+        throws DataInvalidaException {
+        double total = 0, totalAs = 0, totalCom = 0, totalHr = 0;
+        LocalDate d = stringToDate(data, "data");
+        for (Empregado e : empregados) {
+            boolean recebeu = false;
+            if (e instanceof Assalariado) {
+                Assalariado a = (Assalariado) e;
+                if (a.recebeHoje(d)) {
+                    recebeu = true;
+                    totalAs += a.getSalario();
+                }
+            } else if (e instanceof Comissionado) {
+                Comissionado c = (Comissionado) e;
+                if (c.recebeHoje(d)) {
+                    recebeu = true;
+                    totalCom += c.getSalario(d);
+                }
+            } else if (e instanceof Horista) {
+                Horista h = (Horista) e;
+                if (h.recebeHoje(d)) {
+                    recebeu = true;
+                    totalHr += h.getSalarioBruto(d);
+                }
+            }
+            if (recebeu) {
+                String id = String.valueOf(e.getId());
+                folha.computeIfAbsent(data, k -> new ArrayList<>()).add(id);
+            }
+        }
 
-    // }
+        total = totalAs + totalCom + totalHr;
+
+        Map<String, String> porTipo = new TreeMap<>();
+        porTipo.put("assalariado", converteSalario(totalAs));
+        porTipo.put("comissionado", converteSalario(totalCom));
+        porTipo.put("horista", converteSalario(totalHr));
+        folhaPorTipo.put(data, porTipo);
+
+        double arredondado = Math.round(total * 100.0)/100.0;
+        String v = String.format("%.2f", arredondado).replace(".", ",");
+        return v;
+    }
+
+    public void rodaFolha (String data, String saida)
+            throws IOException, DataInvalidaException, 
+            EmpregadoNaoExisteException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(saida))) {
+            double total = 0;
+            LocalDate d = stringToDate(data, "data");
+            writer.write("FOLHA DE PAGAMENTO DO DIA " + d);
+            writer.newLine();
+            writer.write("====================================");
+            writer.newLine();
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("===================== HORISTAS ================================================================================================");
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("Nome                                 Horas Extra Salario Bruto Descontos Salario Liquido Metodo");
+            writer.newLine();
+            writer.write("==================================== ===== ===== ============= ========= =============== ======================================");
+            writer.newLine();
+            
+            String strHn, strHx, strBruto, strLiquido, strDescontos;
+            double totalBruto = 0, totalDescontos = 0, totalLiquido = 0;
+            double hnTotal = 0, hxTotal = 0;
+            List<String> idsDoDia = folha.get(data);
+
+            //HORISTAS
+            if (idsDoDia != null) {
+                List<Horista> horistasDoDia = new ArrayList<>();
+                for (String ids : idsDoDia) {
+                    Empregado e = getEmpregadoPorId(ids);
+                    if (e instanceof Horista) {
+                        horistasDoDia.add((Horista) e);
+                    }
+                }
+
+                horistasDoDia.sort(Comparator.comparing(Horista::getNome));
+
+                for (Horista h : horistasDoDia) {
+                    double bruto = h.getSalarioBruto(d);
+                    double liquido = h.getSalarioLiquido(d);
+                    double descontos = h.getDescontos(d, bruto);
+                    LocalDate inicio = d.minusDays(6);
+                    double hnSemanal = h.getHnSemanal(inicio, d);
+                    double hxSemanal = h.getHxSemanal(inicio, d);
+                    String metodo;
+
+                    if (bruto <= 0) {
+                        hnSemanal = 0;
+                        hxSemanal = 0;
+                    }
+
+                    if (h.getMetodoPagamento().equals("emMaos")) {
+                        metodo = "Em maos";
+                    } else if (h.getMetodoPagamento().equals("banco")) {
+                        metodo = h.getBanco() + 
+                                ", Ag. " + h.getAgencia() + 
+                                " CC " + h.getContaCorrente();
+                    } else if (h.getMetodoPagamento().equals("correios")) {
+                        metodo = "Correios, end" + String.valueOf(h.getId()); 
+                    } else {
+                        metodo = h.getMetodoPagamento();
+                    }
+
+                    hnTotal += hnSemanal;
+                    hxTotal += hxSemanal;
+                    totalBruto += bruto;
+                    totalDescontos += descontos;
+                    totalLiquido += liquido;
+
+                    strBruto = converteSalario(bruto);
+                    strLiquido = converteSalario(liquido);
+                    strDescontos = converteSalario(descontos);
+                    strHn = String.format("%.0f", hnSemanal);
+                    strHx = String.format("%.0f", hxSemanal);
+
+                    writer.write(String.format(
+                        "%-36s %5s %5s %13s %9s %15s %-38s",
+                        h.getNome(), 
+                        strHn,
+                        strHx,
+                        strBruto,
+                        strDescontos,
+                        strLiquido,
+                        metodo
+                    ));
+                    writer.newLine();
+
+                    h.setUltimoPagamento(d);
+                }
+
+                strBruto = converteSalario(totalBruto);
+                strLiquido = converteSalario(totalLiquido);
+                strDescontos = converteSalario(totalDescontos);
+                strHn = String.format("%.0f", hnTotal);
+                strHx = String.format("%.0f", hxTotal);
+
+                total += totalBruto;
+
+                writer.newLine();
+                writer.write(String.format(
+                    "%-36s %5s %5s %13s %9s %15s", 
+                    "TOTAL HORISTAS",
+                    strHn,
+                    strHx,
+                    strBruto,
+                    strDescontos,
+                    strLiquido
+                    ));
+                
+            writer.newLine();
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("===================== ASSALARIADOS ============================================================================================");
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("Nome                                             Salario Bruto Descontos Salario Liquido Metodo");
+            writer.newLine();
+            writer.write("================================================ ============= ========= =============== ======================================");
+            writer.newLine();
+            
+            //ASSALARIADOS
+            if (idsDoDia != null) {
+                totalBruto = 0;
+                totalDescontos = 0;
+                totalLiquido = 0;
+
+                List<Assalariado> AssalariadosDoDia = new ArrayList<>();
+                for (String ids : idsDoDia) {
+                    Empregado e = getEmpregadoPorId(ids);
+                    if (e instanceof Assalariado) {
+                        AssalariadosDoDia.add((Assalariado) e);
+                    }
+                }
+                AssalariadosDoDia.sort(Comparator.comparing(Assalariado::getNome));
+
+                for (Assalariado a : AssalariadosDoDia) {
+
+                    double bruto = a.getSalario();
+                    double liquido = a.getSalarioLiquido(d);
+                    double descontos = a.getDescontos(d);
+                    String metodo;
+
+                    if (a.getMetodoPagamento().equals("emMaos")) {
+                        metodo = "Em maos";
+                    } else if (a.getMetodoPagamento().equals("banco")) {
+                        metodo = a.getBanco() + 
+                                ", Ag. " + a.getAgencia() + 
+                                " CC " + a.getContaCorrente();
+                    } else if (a.getMetodoPagamento().equals("correios")) {
+                        metodo = "Correios, end" + String.valueOf(a.getId()); 
+                    } else {
+                        metodo = a.getMetodoPagamento();
+                    }
+
+                    a.setUltimoPagamento(d);
+
+                    totalBruto += bruto;
+                    totalDescontos += descontos;
+                    totalLiquido += liquido;
+
+                    strBruto = converteSalario(bruto);
+                    strLiquido = converteSalario(liquido);
+                    strDescontos = converteSalario(descontos);
+
+                    writer.write(String.format(
+                        "%-48s %13s %9s %15s %-38s",
+                        a.getNome(), 
+                        strBruto,
+                        strDescontos,
+                        strLiquido,
+                        metodo
+                    ));
+                    writer.newLine();
+                }
+
+                strBruto = converteSalario(totalBruto);
+                strLiquido = converteSalario(totalLiquido);
+                strDescontos = converteSalario(totalDescontos);
+
+                total += totalBruto;
+
+                writer.newLine();
+                writer.write(String.format(
+                    "%-48s %13s %9s %15s", 
+                    "TOTAL ASSALARIADOS",
+                    strBruto,
+                    strDescontos,
+                    strLiquido
+                    ));
+                }
+            }
+            writer.newLine();
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("===================== COMISSIONADOS ===========================================================================================");
+            writer.newLine();
+            writer.write("===============================================================================================================================");
+            writer.newLine();
+            writer.write("Nome                  Fixo     Vendas   Comissao Salario Bruto Descontos Salario Liquido Metodo");
+            writer.newLine();
+            writer.write("===================== ======== ======== ======== ============= ========= =============== ======================================");
+            writer.newLine();
+        
+            //COMISSIONADOS
+            if (idsDoDia != null) {
+                totalBruto = 0;
+                totalDescontos = 0;
+                totalLiquido = 0;
+                double totalFixo = 0, totalVendas = 0, totalComissao = 0;
+                List<Comissionado> comissionadosDoDia = new ArrayList<>();
+                for (String ids : idsDoDia) {
+                    Empregado e = getEmpregadoPorId(ids);
+                    if (e instanceof Comissionado) {
+                        comissionadosDoDia.add((Comissionado) e);
+                    }
+                }
+
+                comissionadosDoDia.sort(Comparator.comparing(Comissionado::getNome));
+
+                for (Comissionado c : comissionadosDoDia) {
+                    double fixo = c.getFixo(d);
+                    double liquido = c.getSalarioLiquido(d);
+                    double descontos = c.getDescontos(d);
+                    double vendas = c.getTotalVendas(d);
+                    double comissao = c.getComissaoTotal(d);
+                    double bruto = c.getSalario(d);
+                    String metodo;
+
+
+                    if (c.getMetodoPagamento().equals("emMaos")) {
+                        metodo = "Em maos";
+                    } else if (c.getMetodoPagamento().equals("banco")) {
+                        metodo = c.getBanco() + 
+                                ", Ag. " + c.getAgencia() + 
+                                " CC " + c.getContaCorrente();
+                    } else if (c.getMetodoPagamento().equals("correios")) {
+                        metodo = "Correios, end" + String.valueOf(c.getId()); 
+                    } else {
+                        metodo = c.getMetodoPagamento();
+                    }
+
+                    totalBruto += bruto;
+                    totalDescontos += descontos;
+                    totalLiquido += liquido;
+                    totalFixo += fixo;
+                    totalVendas += vendas;
+                    totalComissao += comissao;
+
+                    String strFixo = converteSalario(fixo);
+                    strLiquido = converteSalario(liquido);
+                    strDescontos = converteSalario(descontos);
+                    String strComissao = converteSalario(comissao);
+                    String strVendas = converteSalario(vendas);
+                    strBruto = converteSalario(bruto);
+
+                    writer.write(String.format(
+                        "%-21s %8s %8s %8s %13s %9s %15s %-38s",
+                        c.getNome(), 
+                        strFixo,
+                        strVendas,
+                        strComissao,                       
+                        strBruto,
+                        strDescontos,
+                        strLiquido,
+                        metodo
+                    ));
+                    writer.newLine();
+
+                    c.setUltimoPagamento(d);
+                }
+
+                strBruto = converteSalario(totalBruto);
+                strLiquido = converteSalario(totalLiquido);
+                strDescontos = converteSalario(totalDescontos);
+                String strFixo = converteSalario(totalFixo);
+                String strVendas = converteSalario(totalVendas);
+                String strComissao = converteSalario(totalComissao);
+
+                total += totalBruto;
+
+                writer.newLine();
+                writer.write(String.format(
+                    "%-21s %8s %8s %8s %13s %9s %15s", 
+                    "TOTAL COMISSIONADOS",
+                    strFixo,
+                    strVendas,
+                    strComissao,
+                    strBruto,
+                    strDescontos,
+                    strLiquido
+                    ));
+                writer.newLine();
+                writer.newLine();
+                String strTotal = converteSalario(total);
+                writer.write("TOTAL FOLHA: " + strTotal);
+            }
+        }
+    }
 
     public void encerrarSistema () {
         try {
@@ -616,7 +957,7 @@ public class Controlador {
             encoder.close();
             f.close();
         } catch (Exception e) {
-            
+            e.printStackTrace();
         }
     }
 

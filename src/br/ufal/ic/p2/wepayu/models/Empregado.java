@@ -2,10 +2,11 @@ package br.ufal.ic.p2.wepayu.models;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public abstract class Empregado {
+public abstract class Empregado implements Serializable {
     private static long contador = 1;
 
     private String nome;
@@ -23,6 +24,9 @@ public abstract class Empregado {
     private String banco;
     private String agencia;
     private String contaCorrente;
+
+    private LocalDate ultimoPagamento;
+    private LocalDate dataInicio;
 
     public Empregado () {
 
@@ -43,6 +47,9 @@ public abstract class Empregado {
         this.banco = null;
         this.agencia = null;
         this.contaCorrente = null;
+
+        this.ultimoPagamento = null;
+        this.dataInicio = null;
     }
 
     public long getId () {
@@ -83,6 +90,32 @@ public abstract class Empregado {
 
     public void setSalario (double salario) {
         this.salario = salario;
+    }
+
+    public LocalDate getUltimoPagamentoD () {
+        return this.ultimoPagamento;
+    }
+
+    public void setUltimoPagamento (LocalDate data) {
+        this.ultimoPagamento = data;
+    }
+
+    public LocalDate getDataInicioD () {
+        return this.dataInicio;
+    }
+
+    public void setDataInicio (LocalDate data) {
+        this.dataInicio = data;
+    }
+
+    public String getUltimoPagamento () {
+        String pag = String.valueOf(getUltimoPagamentoD());
+        return pag;
+    }
+
+    public String getDataInicio () {
+        String dia = String.valueOf(getDataInicioD());
+        return dia;
     }
 
     public boolean getSindicalizado () {

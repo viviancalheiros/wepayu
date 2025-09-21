@@ -4,10 +4,14 @@ import br.ufal.ic.p2.wepayu.Exception.Empregado.EmpregadoNaoExisteException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.IdNaoNuloException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.MembroNaoExisteException;
 import br.ufal.ic.p2.wepayu.controller.Controlador;
+
+import java.io.IOException;
+import java.io.Serializable;
+
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 import br.ufal.ic.p2.wepayu.models.*;
 
-public class Facade {
+public class Facade implements Serializable {
     Controlador c = new Controlador();
 
     public Facade () {
@@ -20,10 +24,6 @@ public class Facade {
 
     public void zerarSistema () {
         c.zerarSistema();
-    }
-
-    public void salvarDados () {
-        c.salvarDados();
     }
 
     public String criarEmpregado (String nome, String endereco, String tipo, String salario) {
@@ -106,6 +106,17 @@ public class Facade {
         throws EmpregadoNaoExisteException, DataInvalidaException {
             return c.getTaxasServico(emp, dataInicial, dataFinal);
     }
+
+    public String totalFolha (String data)
+        throws DataInvalidaException {
+            return c.totalFolha(data);
+        }
+    
+    public void rodaFolha (String data, String saida)
+        throws IOException, DataInvalidaException,
+        EmpregadoNaoExisteException {
+            c.rodaFolha(data, saida);
+        }
 
     public void encerrarSistema () {
         c.encerrarSistema();

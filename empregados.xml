@@ -1,4 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <java version="19" class="java.beans.XMLDecoder">
- <object class="java.util.ArrayList"/>
+ <object class="java.util.ArrayList">
+  <void method="add">
+   <object class="br.ufal.ic.p2.wepayu.models.Comissionado">
+    <void property="comissao">
+     <double>0.02</double>
+    </void>
+    <void property="endereco">
+     <string>Rua dos Jooes, 333 - Campina Grande</string>
+    </void>
+    <void property="id">
+     <long>22</long>
+    </void>
+    <void property="metodoPagamento">
+     <string>emMaos</string>
+    </void>
+    <void property="nome">
+     <string>Joao da Silva</string>
+    </void>
+    <void property="salario">
+     <double>23.0</double>
+    </void>
+    <void property="tipo">
+     <string>comissionado</string>
+    </void>
+   </object>
+  </void>
+ </object>
 </java>
