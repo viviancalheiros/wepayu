@@ -7,8 +7,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.beans.Expression;
-import java.beans.PersistenceDelegate;
 import java.beans.XMLDecoder;
 
 import java.time.DateTimeException;
@@ -17,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Map;
 import java.util.TreeMap;
@@ -688,9 +685,11 @@ public class Controlador implements Serializable {
                     double bruto = h.getSalarioBruto(d);
                     double liquido = h.getSalarioLiquido(d);
                     double descontos = h.getDescontos(d, bruto);
-                    LocalDate inicio = d.minusDays(6);
-                    double hnSemanal = h.getHnSemanal(inicio, d);
-                    double hxSemanal = h.getHxSemanal(inicio, d);
+                    LocalDate inicio;
+                    if (h.getUltimoPagamentoD() != null) inicio = h.getUltimoPagamentoD();
+                    else inicio = h.getDataInicioD();
+                    double hnSemanal = h.getHnSemanal(d.minusDays(6), d);
+                    double hxSemanal = h.getHxSemanal(d.minusDays(6), d);
                     String metodo;
 
                     if (bruto <= 0) {
@@ -705,7 +704,7 @@ public class Controlador implements Serializable {
                                 ", Ag. " + h.getAgencia() + 
                                 " CC " + h.getContaCorrente();
                     } else if (h.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, end" + String.valueOf(h.getId()); 
+                        metodo = "Correios, " + h.getEndereco(); 
                     } else {
                         metodo = h.getMetodoPagamento();
                     }
@@ -798,7 +797,7 @@ public class Controlador implements Serializable {
                                 ", Ag. " + a.getAgencia() + 
                                 " CC " + a.getContaCorrente();
                     } else if (a.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, end" + String.valueOf(a.getId()); 
+                        metodo = "Correios, " + a.getEndereco();  
                     } else {
                         metodo = a.getMetodoPagamento();
                     }
@@ -886,7 +885,7 @@ public class Controlador implements Serializable {
                                 ", Ag. " + c.getAgencia() + 
                                 " CC " + c.getContaCorrente();
                     } else if (c.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, end" + String.valueOf(c.getId()); 
+                        metodo = "Correios, " + c.getEndereco(); 
                     } else {
                         metodo = c.getMetodoPagamento();
                     }

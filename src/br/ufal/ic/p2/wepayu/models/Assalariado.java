@@ -5,10 +5,9 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.io.Serializable;
 import java.time.DayOfWeek;
 
-public class Assalariado extends Empregado implements Serializable {
+public class Assalariado extends Empregado {
 
     public Assalariado () {
         

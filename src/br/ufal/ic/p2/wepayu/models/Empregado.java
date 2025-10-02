@@ -92,16 +92,8 @@ public abstract class Empregado implements Serializable {
         this.salario = salario;
     }
 
-    public LocalDate getUltimoPagamentoD () {
-        return this.ultimoPagamento;
-    }
-
     public void setUltimoPagamento (LocalDate data) {
         this.ultimoPagamento = data;
-    }
-
-    public LocalDate getDataInicioD () {
-        return this.dataInicio;
     }
 
     public void setDataInicio (LocalDate data) {
@@ -109,13 +101,21 @@ public abstract class Empregado implements Serializable {
     }
 
     public String getUltimoPagamento () {
-        String pag = String.valueOf(getUltimoPagamentoD());
+        String pag = String.valueOf(this.ultimoPagamento);
         return pag;
     }
 
+    public LocalDate getUltimoPagamentoD () {
+        return this.ultimoPagamento;
+    }
+
     public String getDataInicio () {
-        String dia = String.valueOf(getDataInicioD());
+        String dia = String.valueOf(this.dataInicio);
         return dia;
+    }
+
+    public LocalDate getDataInicioD () {
+        return this.dataInicio;
     }
 
     public boolean getSindicalizado () {

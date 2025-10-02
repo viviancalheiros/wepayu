@@ -2,14 +2,13 @@ package br.ufal.ic.p2.wepayu.models;
 
 import java.util.TreeMap;
 import java.util.Map;
-import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
-public class Comissionado extends Empregado implements Serializable {
+public class Comissionado extends Empregado {
     private double comissao;
     private Map<String, Double> vendas = new TreeMap<>();
 
@@ -49,15 +48,27 @@ public class Comissionado extends Empregado implements Serializable {
         this.vendas = vendas;
     }
 
+
     public boolean recebeHoje (LocalDate data) {
         if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
             return false;
         }
-        long diasDesdeInicio = ChronoUnit.DAYS.between(getDataInicioD(), data);
-        if (diasDesdeInicio < 13) return false;
+        //data de inicio sempre 1/1/2005
+        LocalDate ultimo = getUltimoPagamentoD();
 
-        long diasDesdePag = diasDesdeInicio - 13;
-        return diasDesdePag % 14 == 0;
+        if (ultimo == null) {
+            final LocalDate inicio = LocalDate.of(2005, 1, 1);
+            ultimo = getDataInicioD();
+            if (inicio == null) return false;
+            long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
+            if (diasDesdeInicio < 13) return false;
+
+            long diasDesdePag = diasDesdeInicio - 13;
+            return diasDesdePag % 14 == 0;
+        } else {
+            long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
+            return diasDesdeUltimoPag == 14;
+        }
     }
 
     private double calculaTaxas (LocalDate inicio, LocalDate fim) {
@@ -80,13 +91,8 @@ public class Comissionado extends Empregado implements Serializable {
         double descontos = 0;
         if (getSindicalizado() == true) {
             LocalDate inicio;
-            if (getUltimoPagamento() == null) {
-                inicio = getDataInicioD();
-            } else {
-                inicio = getUltimoPagamentoD();
-            }
+            inicio = data.minusDays(14);
             long dias = ChronoUnit.DAYS.between(inicio, data);
-            if (getUltimoPagamentoD() == null) dias += 1;
             double taxaSindTotal = dias * getTaxaSindical();
             double taxasTotal = calculaTaxas(inicio, data);
             descontos = taxaSindTotal + taxasTotal;
@@ -100,13 +106,7 @@ public class Comissionado extends Empregado implements Serializable {
 
     public double getSalario (LocalDate data) {
         double salarioBase = truncar(getSalario() * 12 / 26.0);
-        LocalDate dataInicio;
-        if (getUltimoPagamento() == null) {
-            dataInicio = getDataInicioD();
-        } else {
-            dataInicio = getUltimoPagamentoD();
-        }
-
+    
         double totalVendas = getTotalVendas(data);
 
         double comissaoVendas = truncar(totalVendas * getComissao());
@@ -135,7 +135,7 @@ public class Comissionado extends Empregado implements Serializable {
         
         LocalDate inicioPeriodo;
         
-        if (getUltimoPagamento() == null) {
+        if (getUltimoPagamentoD() == null) {
             inicioPeriodo = getDataInicioD();
         } else {
             inicioPeriodo = getUltimoPagamentoD();

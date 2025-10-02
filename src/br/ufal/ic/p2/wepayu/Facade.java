@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
-import br.ufal.ic.p2.wepayu.models.*;
 
 public class Facade implements Serializable {
     Controlador c = new Controlador();

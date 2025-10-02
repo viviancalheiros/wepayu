@@ -1,6 +1,5 @@
 package br.ufal.ic.p2.wepayu.models;
 
-import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,7 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Horista extends Empregado implements Serializable {
+public class Horista extends Empregado {
     private Map<String, Double> horasNormais = new TreeMap<>();
     private Map<String, Double> horasExtras = new TreeMap<>();
     private LocalDate dataInicio = null;
@@ -84,17 +83,13 @@ public class Horista extends Empregado implements Serializable {
 
     public double getDescontos (LocalDate data, double salarioBruto) {
         double descontos = 0;
-        if (salarioBruto <= 0) return 0;
-        if (getSindicalizado() == true) {
+        if (salarioBruto > 0 && getSindicalizado() == true) {
             LocalDate inicio;
-            if(getUltimoPagamentoD() == null) {
-                inicio = getDataInicioD();
-            } else {
-                inicio = getUltimoPagamentoD();
-            }
+            if (getUltimoPagamentoD() == null) inicio = getDataInicioD();
+            else inicio = getUltimoPagamentoD();
             if (inicio != null) {
-                long dias = ChronoUnit.DAYS.between(inicio, data)+1;
-                double taxaSindTotal = dias * getTaxaSindical();
+                long dias = ChronoUnit.DAYS.between(inicio, data);
+                double taxaSindTotal = (dias+1) * getTaxaSindical();
                 double totalTaxas = calculaTaxas(inicio, data);
                 descontos = taxaSindTotal + totalTaxas;
             }

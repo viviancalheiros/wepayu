@@ -27,8 +27,11 @@ TOTAL ASSALARIADOS                                        0,00      0,00        
 ===============================================================================================================================
 Nome                  Fixo     Vendas   Comissao Salario Bruto Descontos Salario Liquido Metodo
 ===================== ======== ======== ======== ============= ========= =============== ======================================
-Deborah Secco           600,00     0,00     0,00        600,00      0,00          600,00 Correios, end35                       
+Ana Paula Arosio        646,15   323,45    38,81        684,96      0,00          684,96 Correios, end10                       
+Deborah Secco           600,00     0,00     0,00        600,00      0,00          600,00 Correios, end9                        
+Maite Proenca           738,46   323,45    45,28        783,74     84,00          699,74 Correios, end12                       
+Suzana Vieira           692,30   323,45    42,04        734,34     14,00          720,34 Correios, end11                       
 
-TOTAL COMISSIONADOS     600,00     0,00     0,00        600,00      0,00          600,00
+TOTAL COMISSIONADOS    2676,91   970,35   126,13       2803,04     98,00         2705,04
 
-TOTAL FOLHA: 600,00
+TOTAL FOLHA: 2803,04
