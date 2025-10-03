@@ -290,6 +290,7 @@ public class Controlador implements Serializable {
             throw new HoraNulaException();
         }
         h.setHoras(d, hrs);
+        if (h.getDataInicioD() == null) h.setDataInicio(d);
     }
 
     public String getHorasNormaisTrabalhadas (String emp, String dataInicial, String dataFinal)
@@ -685,9 +686,6 @@ public class Controlador implements Serializable {
                     double bruto = h.getSalarioBruto(d);
                     double liquido = h.getSalarioLiquido(d);
                     double descontos = h.getDescontos(d, bruto);
-                    LocalDate inicio;
-                    if (h.getUltimoPagamentoD() != null) inicio = h.getUltimoPagamentoD();
-                    else inicio = h.getDataInicioD();
                     double hnSemanal = h.getHnSemanal(d.minusDays(6), d);
                     double hxSemanal = h.getHxSemanal(d.minusDays(6), d);
                     String metodo;
@@ -733,7 +731,7 @@ public class Controlador implements Serializable {
                     ));
                     writer.newLine();
 
-                    h.setUltimoPagamento(d);
+                    if (bruto > 0) h.setUltimoPagamento(d);
                 }
 
                 strBruto = converteSalario(totalBruto);

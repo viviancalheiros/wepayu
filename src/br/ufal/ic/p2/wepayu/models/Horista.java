@@ -31,9 +31,6 @@ public class Horista extends Empregado {
     }
 
     public void setHoras (LocalDate data, double horas) {
-        if (this.dataInicio == null) {
-            this.dataInicio = data;
-        }
         String d = String.valueOf(data);
         if (horas <= 8) {
             this.horasNormais.put(d, horas);
@@ -89,7 +86,8 @@ public class Horista extends Empregado {
             else inicio = getUltimoPagamentoD();
             if (inicio != null) {
                 long dias = ChronoUnit.DAYS.between(inicio, data);
-                double taxaSindTotal = (dias+1) * getTaxaSindical();
+                if (inicio == getDataInicioD()) dias += 1;
+                double taxaSindTotal = (dias) * getTaxaSindical();
                 double totalTaxas = calculaTaxas(inicio, data);
                 descontos = taxaSindTotal + totalTaxas;
             }
@@ -98,9 +96,9 @@ public class Horista extends Empregado {
     }
 
     public double getSalarioBruto (LocalDate data) {
-        LocalDate inicioSemana = data.minusDays(6);
-        double hn = getHnSemanal(inicioSemana, data);
-        double hx = getHxSemanal(inicioSemana, data);
+        LocalDate inicio = data.minusDays(6);
+        double hn = getHnSemanal(inicio, data);
+        double hx = getHxSemanal(inicio, data);
 
         double valorHora = getSalario();
         double salarioBruto = (hn * valorHora) + (hx * valorHora * 1.5);
