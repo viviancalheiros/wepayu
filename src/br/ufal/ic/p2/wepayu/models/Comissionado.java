@@ -2,13 +2,14 @@ package br.ufal.ic.p2.wepayu.models;
 
 import java.util.TreeMap;
 import java.util.Map;
+import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
-public class Comissionado extends Empregado {
+public class Comissionado extends Empregado implements Serializable {
     private double comissao;
     private Map<String, Double> vendas = new TreeMap<>();
 
@@ -159,5 +160,12 @@ public class Comissionado extends Empregado {
     public double getComissaoTotal (LocalDate data) {
         double vendas = truncar(getTotalVendas(data));
         return truncar(vendas*getComissao());
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Comissionado clone = (Comissionado) super.clone();
+        clone.vendas = new TreeMap<>(this.vendas);
+        return clone;
     }
 }

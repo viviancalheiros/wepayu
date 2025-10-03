@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public abstract class Empregado implements Serializable {
+public abstract class Empregado implements Serializable, Cloneable {
     private static long contador = 1;
 
     private String nome;
@@ -185,6 +185,13 @@ public abstract class Empregado implements Serializable {
         this.banco = banco;
         this.agencia = agencia;
         this.contaCorrente = contaCorrente;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Empregado clone = (Empregado) super.clone();
+        clone.taxaDia = new TreeMap<>(this.taxaDia);
+        return clone;
     }
 
 }

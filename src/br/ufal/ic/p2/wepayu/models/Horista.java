@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.wepayu.models;
 
+import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -7,7 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Horista extends Empregado {
+public class Horista extends Empregado implements Serializable {
     private Map<String, Double> horasNormais = new TreeMap<>();
     private Map<String, Double> horasExtras = new TreeMap<>();
     private LocalDate dataInicio = null;
@@ -133,6 +134,14 @@ public class Horista extends Empregado {
             hx += getHorasExtras(inicio);
         }
         return hx;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Horista clone = (Horista) super.clone();
+        clone.horasNormais = new TreeMap<>(this.horasNormais);
+        clone.horasExtras = new TreeMap<>(this.horasExtras);
+        return clone;
     }
 
 }

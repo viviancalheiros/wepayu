@@ -117,6 +117,18 @@ public class Facade implements Serializable {
             c.rodaFolha(data, saida);
         }
 
+    public String getNumeroDeEmpregados () {
+        return c.getNumeroDeEmpregados();
+    }
+
+    public void undo () {
+        c.undo();
+    }
+
+    public void redo () {
+        c.redo();
+    }
+
     public void encerrarSistema () {
         c.encerrarSistema();
     }
