@@ -160,4 +160,12 @@ public class Comissionado extends Empregado {
         double vendas = truncar(getTotalVendas(data));
         return truncar(vendas*getComissao());
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Comissionado clone = (Comissionado) super.clone();
+        clone.comissao = this.comissao;
+        clone.vendas = new TreeMap<>(this.vendas);
+        return clone;
+    }
 }

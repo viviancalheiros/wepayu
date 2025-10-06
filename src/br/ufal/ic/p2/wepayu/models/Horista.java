@@ -135,4 +135,12 @@ public class Horista extends Empregado {
         return hx;
     }
 
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Horista clone = (Horista) super.clone();
+        clone.horasNormais = new TreeMap<>(this.horasNormais);
+        clone.horasExtras = new TreeMap<>(this.horasExtras);
+        return clone;
+    }
+
 }
