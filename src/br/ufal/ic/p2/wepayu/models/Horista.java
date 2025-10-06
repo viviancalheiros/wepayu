@@ -1,6 +1,5 @@
 package br.ufal.ic.p2.wepayu.models;
 
-import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -8,7 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Horista extends Empregado implements Serializable {
+public class Horista extends Empregado {
     private Map<String, Double> horasNormais = new TreeMap<>();
     private Map<String, Double> horasExtras = new TreeMap<>();
     private LocalDate dataInicio = null;

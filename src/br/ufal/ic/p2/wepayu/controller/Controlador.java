@@ -9,10 +9,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.beans.XMLDecoder;
 
-import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Scanner;
@@ -27,6 +24,8 @@ import br.ufal.ic.p2.wepayu.Exception.Horas.*;
 import br.ufal.ic.p2.wepayu.Exception.Venda.*;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.*;
 import br.ufal.ic.p2.wepayu.models.*;
+import br.ufal.ic.p2.wepayu.services.EmpregadoService;
+import br.ufal.ic.p2.wepayu.services.SindicatoService;
 import br.ufal.ic.p2.wepayu.utils.*;
 
 public class Controlador implements Serializable {
@@ -35,6 +34,7 @@ public class Controlador implements Serializable {
     Map<String, String> dadosSindicais = new TreeMap<>(); //id, idSindical
     Map<String, List<String>> folha = new TreeMap<>(); //data, id
     Map<String, Map<String, String>> folhaPorTipo = new TreeMap<>(); //data -> (tipo, total)
+    private boolean status = false;
     Historico historico = new Historico();
 
     public void iniciarSistema () {
@@ -44,6 +44,7 @@ public class Controlador implements Serializable {
             this.empregados = (ArrayList<Empregado>) decoder.readObject();
             decoder.close();
             f.close();
+            this.status = true;
         } catch (Exception e) {
             this.empregados = new ArrayList<>();
         }
@@ -55,58 +56,12 @@ public class Controlador implements Serializable {
         dadosSindicais.clear();
     }
 
-    private void verificarEmpregado (Empregado e) {
-        if (e.getNome().equals("") || e.getNome().equals(null)) {
-            throw new AtributoNaoNulo("Nome");
-        } else if (e.getEndereco().equals("") || e.getEndereco().equals(null)) {
-            throw new AtributoNaoNulo("Endereco");
-        }
-    }
-
-    private void verificarSalario (String salario) {
-        if (salario == null || salario.isEmpty()) {
-            throw new SalarioException("Salario nao pode ser nulo.");
-        }
-        try {
-            Double sal = Double.parseDouble(salario.replace(",", "."));
-            if (sal < 0) {
-                throw new SalarioException("Salario deve ser nao-negativo.");
-            }
-        } catch (NumberFormatException e) {
-            throw new SalarioException("Salario deve ser numerico.");
-        }
-    }
-
-    private void verificarComissao (String comissao) {
-        if (comissao == null || comissao.isEmpty()) {
-            throw new ComissaoException("Comissao nao pode ser nula.");
-        }
-        try {
-            Double com = Double.parseDouble(comissao.replace(",", "." ));
-            if (com < 0) {
-                throw new ComissaoException("Comissao deve ser nao-negativa.");
-            }
-        } catch (NumberFormatException e) {
-            throw new ComissaoException("Comissao deve ser numerica.");
-        }
-    }
-
-    public String criarEmpregado (String nome, String endereco, String tipo, String salario) {
-        Empregado e;
+    public String criarEmpregado (String nome, String endereco, String tipo, String salario)
+        throws SalarioException, AtributoNaoNulo {
         
-        verificarSalario(salario);
+        ValidacaoUtils.verificarSalario(salario);
 
-        if (tipo.equals("assalariado")) {
-            e = new Assalariado(nome, endereco, tipo, salario);
-            verificarEmpregado(e);
-        } else if (tipo.equals("horista")) {
-            e = new Horista(nome, endereco, tipo, salario);
-            verificarEmpregado(e);
-        } else if (tipo.equals("comissionado")) {
-            throw new TipoAtributoException("Tipo nao aplicavel.");
-        } else {
-            throw new TipoAtributoException("Tipo invalido.");
-        }
+        Empregado e = EmpregadoService.criarEmpregado(nome, endereco, tipo, salario);
 
         historico.salvarEstado(empregados, dadosSindicais);
 
@@ -115,37 +70,13 @@ public class Controlador implements Serializable {
     }
 
     public String criarEmpregado (String nome, String endereco, String tipo, String salario, 
-            String comissao) {
-        verificarSalario(salario);
-
-        if (tipo.equals("comissionado")) {
-            verificarComissao(comissao);
-            Comissionado c = new Comissionado(nome, endereco, tipo, salario, comissao);
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            empregados.add(c);
-            return String.valueOf(c.getId());
-        } else if (tipo.equals("assalariado") || tipo.equals("horista")) {
-            throw new TipoAtributoException("Tipo nao aplicavel.");
-        } else {
-            throw new TipoAtributoException("Tipo invalido.");
-        }
-    }
-
-    public Empregado getEmpregadoPorId (String emp) throws EmpregadoNaoExisteException {
-        if (emp == null || emp.isEmpty()) {
-            if (empregados.isEmpty()) {
-                throw new EmpregadoNaoExisteException();
-            } else {
-                throw new IdNuloException("Identificacao do empregado nao pode ser nula.");
-            }
-        }
-        for (Empregado e : empregados) {
-            String id = String.valueOf(e.getId());
-            if (id.equals(emp)) {
-                return e;
-            }
-        }
-        throw new EmpregadoNaoExisteException();
+            String comissao) throws SalarioException, ComissaoException {
+        
+        ValidacaoUtils.verificarSalario(salario);
+        Empregado e = EmpregadoService.criarEmpregado(nome, endereco, tipo, salario, comissao);
+        historico.salvarEstado(this.empregados, this.dadosSindicais);
+        empregados.add(e);
+        return String.valueOf(e.getId());
     }
 
     public String getEmpregadoPorNome (String nome, String indice) {
@@ -161,18 +92,9 @@ public class Controlador implements Serializable {
             throw new TipoEmpregadoException("Nao ha empregado com esse nome.");
     }
 
-    private boolean recebeEmBanco (String emp)
-        throws EmpregadoNaoExisteException {
-            Empregado e = getEmpregadoPorId(emp);
-            if (e.getMetodoPagamento().equals(("banco"))) {
-                return true;
-            }
-            return false;
-    }
-
     public String getAtributoEmpregado (String emp, String atributo)
             throws EmpregadoNaoExisteException, NaoSindicalizadoException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (atributo.equals("nome")) {
             return e.getNome();
         } else if (atributo.equals("endereco")) {
@@ -180,9 +102,9 @@ public class Controlador implements Serializable {
         } else if (atributo.equals("tipo")) {
             return e.getTipo();
         } else if (atributo.equals("salario")) {
-            return Utils.converteSalario(e.getSalario());
+            return ConversorUtils.converteSalario(e.getSalario());
         } else if (atributo.equals("sindicalizado")) {
-            return Utils.converteSindicalizado(e.getSindicalizado());
+            return ConversorUtils.converteSindicalizado(e.getSindicalizado());
         } else if (atributo.equals("comissao")) {
             if (e instanceof Comissionado) {
                 Comissionado c = (Comissionado) e;
@@ -193,20 +115,24 @@ public class Controlador implements Serializable {
         } else if (atributo.equals("metodoPagamento")) {
             return e.getMetodoPagamento();
         } else if (atributo.equals("banco")) {
-            if (recebeEmBanco(emp)) return e.getBanco();
+            if (EmpregadoService.recebeEmBanco(emp, this.empregados)) return e.getBanco();
             else throw new NaoBancoException();
         } else if (atributo.equals("agencia")) {
-            if (recebeEmBanco(emp)) return e.getAgencia();
+            if (EmpregadoService.recebeEmBanco(emp, this.empregados)) return e.getAgencia();
             else throw new NaoBancoException();
         } else if (atributo.equals("contaCorrente")) {
-            if (recebeEmBanco(emp)) return e.getContaCorrente();
+            if (EmpregadoService.recebeEmBanco(emp, this.empregados)) return e.getContaCorrente();
             else throw new NaoBancoException();
         } else if (atributo.equals("idSindicato")) {
-            Empregado s = getEmpSindicato(e.getIdSindicato());
+            Empregado s = SindicatoService.getEmpSindicato(
+                e.getIdSindicato(), this.dadosSindicais, this.empregados
+            );
             return s.getIdSindicato();
         } else if (atributo.equals("taxaSindical")) {
-            Empregado s = getEmpSindicato(e.getIdSindicato());
-            String t = Utils.converteSalario(s.getTaxaSindical());
+            Empregado s = SindicatoService.getEmpSindicato(
+                e.getIdSindicato(), this.dadosSindicais, this.empregados
+            );
+            String t = ConversorUtils.converteSalario(s.getTaxaSindical());
             return t;
         } else {
             throw new AtributoNaoExisteException();
@@ -214,19 +140,19 @@ public class Controlador implements Serializable {
     }
 
     public void removerEmpregado (String emp) throws EmpregadoNaoExisteException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         historico.salvarEstado(empregados, dadosSindicais);
         empregados.remove(e);
     }
 
     public void lancaCartao (String emp, String data, String horas)
             throws EmpregadoNaoExisteException, DataInvalidaException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Horista)) {
             throw new TipoEmpregadoException("Empregado nao eh horista.");
         }
         Horista h = (Horista) e;
-        LocalDate d = Utils.stringToDate(data, "data");
+        LocalDate d = ConversorUtils.stringToDate(data, "data");
         double hrs = Double.parseDouble(horas.replace(",","."));
         if (hrs <= 0) {
             throw new HoraNulaException();
@@ -238,12 +164,12 @@ public class Controlador implements Serializable {
 
     public String getHorasNormaisTrabalhadas (String emp, String dataInicial, String dataFinal)
             throws EmpregadoNaoExisteException, DataInvalidaException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Horista)) {
             throw new TipoEmpregadoException("Empregado nao eh horista.");
         }
-        LocalDate di = Utils.stringToDate(dataInicial, "inicial");
-        LocalDate df = Utils.stringToDate(dataFinal, "final");
+        LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
+        LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");
         if (di.isAfter(df)) {
             throw new OrdemException();
         }
@@ -252,17 +178,17 @@ public class Controlador implements Serializable {
         for (LocalDate date = di; date.isBefore(df); date = date.plusDays(1)) {
             horas += h.getHorasNormais(date);
         }
-        return Utils.formatarHoras(horas);
+        return ConversorUtils.formatarHoras(horas);
     }
 
     public String getHorasExtrasTrabalhadas (String emp, String dataInicial, String dataFinal) 
             throws EmpregadoNaoExisteException, DataInvalidaException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Horista)) {
             throw new TipoEmpregadoException("Empregado nao eh horista.");
         }
-        LocalDate di = Utils.stringToDate(dataInicial, "inicial");
-        LocalDate df = Utils.stringToDate(dataFinal, "final");
+        LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
+        LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");
         if (di.isAfter(df)) {
             throw new OrdemException();
         }
@@ -271,17 +197,17 @@ public class Controlador implements Serializable {
         for (LocalDate date = di; date.isBefore(df); date = date.plusDays(1)) {
             horas += h.getHorasExtras(date);
         }
-        return Utils.formatarHoras(horas);
+        return ConversorUtils.formatarHoras(horas);
     }
 
     public void lancaVenda (String emp, String data, String valor)
             throws EmpregadoNaoExisteException, DataInvalidaException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Comissionado)) {
             throw new TipoEmpregadoException("Empregado nao eh comissionado.");
         }
         Comissionado c = (Comissionado) e;
-        LocalDate d = Utils.stringToDate(data, "data");
+        LocalDate d = ConversorUtils.stringToDate(data, "data");
         double v = Double.parseDouble(valor.replace(",", "."));
         if (v <= 0) throw new ValorNaoNuloException();
         historico.salvarEstado(empregados, dadosSindicais);
@@ -290,13 +216,13 @@ public class Controlador implements Serializable {
 
     public String getVendasRealizadas (String emp, String dataInicial, String dataFinal) 
             throws EmpregadoNaoExisteException, DataInvalidaException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Comissionado)) {
             throw new TipoEmpregadoException("Empregado nao eh comissionado.");
         }
         Comissionado c = (Comissionado) e;
-        LocalDate di = Utils.stringToDate(dataInicial, "inicial");
-        LocalDate df = Utils.stringToDate(dataFinal, "final");
+        LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
+        LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");
         if (di.isAfter(df)) {
             throw new OrdemException();
         }
@@ -304,150 +230,37 @@ public class Controlador implements Serializable {
         for (LocalDate date = di; date.isBefore(df); date = date.plusDays(1)) {
             totalVendas += c.getVendas(date);
         }
-        return Utils.converteSalario(totalVendas);
-    }
-
-    private Empregado mudaTipo (Empregado e, String novoTipo) {
-        historico.salvarEstado(empregados, dadosSindicais);
-        if (!(novoTipo.equals("comissionado") ||
-                novoTipo.equals("horista") ||
-                novoTipo.equals("assalariado"))) {
-            throw new TipoAtributoException("Tipo invalido.");
-        }
-        if (novoTipo.equals("assalariado")) {
-            Assalariado a = new Assalariado(
-                e.getNome(), 
-                e.getEndereco(), 
-                "assalariado", 
-                Utils.converteSalario(e.getSalario())
-            );
-            a.setId(e.getId());
-            return a;
-        } else if (novoTipo.equals("horista")) {
-            Horista h = new Horista(
-                e.getNome(), 
-                e.getEndereco(), 
-                "horista", 
-                Utils.converteSalario(e.getSalario())
-            );
-            h.setId(e.getId());
-            return h;
-        } else if (novoTipo.equals("comissionado")) {
-            Comissionado c = new Comissionado(
-                e.getNome(), 
-                e.getEndereco(), 
-                "comissionado", 
-                Utils.converteSalario(e.getSalario()),
-                "0,0"
-            );
-            c.setId(e.getId());
-            return c;
-        }
-        throw new TipoAtributoException("Tipo invalido.");
+        return ConversorUtils.converteSalario(totalVendas);
     }
 
     public void alteraEmpregado (String emp, String atributo, String valor)
             throws EmpregadoNaoExisteException {
-        Empregado e = getEmpregadoPorId(emp);
-        if (atributo.equals("nome")) {
-            if (valor == null || valor.isEmpty()) {
-                throw new AtributoNaoNulo("Nome");
-            }
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            e.setNome(valor);
-        } else if (atributo.equals("endereco")) {
-            if (valor == null || valor.isEmpty()) {
-                throw new AtributoNaoNulo("Endereco");
-            }
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            e.setEndereco(valor);
-        } else if (atributo.equals("sindicalizado")) {
-            if (!(valor.equals("true") || valor.equals("false"))) {
-                throw new SindicatoException("Valor deve ser true ou false.");
-            }
-            boolean v = Boolean.parseBoolean(valor);
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            e.setSindicalizado(v, null, 0);
-        } else if (atributo.equals("comissao")) {
-            if (valor == null || valor.isEmpty()) {
-                throw new ComissaoException("Comissao nao pode ser nula.");
-            }
-            if (!(e instanceof Comissionado)) {
-                throw new TipoEmpregadoException("Empregado nao eh comissionado.");
-            }
-            double v;
-            try {
-                v = Double.parseDouble(valor.replace(",", "."));
-                if (v < 0) {
-                    throw new ComissaoException("Comissao deve ser nao-negativa.");
-                }
-                historico.salvarEstado(this.empregados, this.dadosSindicais);
-                Comissionado c = (Comissionado) e;
-                c.setComissao(v);
-            } catch (NumberFormatException ex) {
-                throw new ComissaoException("Comissao deve ser numerica.");
-            }
-        } else if (atributo.equals("salario")) {
-            if (valor == null || valor.isEmpty()) {
-                throw new SalarioException("Salario nao pode ser nulo.");
-            }
-            double sal;
-            try {
-                sal = Double.parseDouble(valor.replace(",", "."));
-            } catch (NumberFormatException ex) {
-                throw new SalarioException("Salario deve ser numerico.");
-            } 
-            if (sal < 0) {
-                throw new SalarioException("Salario deve ser nao-negativo.");
-            }
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            e.setSalario(sal);
-        } else if (atributo.equals("tipo")) {
-            Empregado novo = mudaTipo(e, valor);
-            novo.setId(e.getId());
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
+            
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
+        historico.salvarEstado(this.empregados, this.dadosSindicais);
+        Empregado novo = EmpregadoService.alteraEmpregado(emp, atributo, valor, e, empregados);
+        if (atributo.equals("tipo")) {
             empregados.remove(e);
             empregados.add(novo);
-        } else if (atributo.equals("metodoPagamento")) {
-            if (!(valor.equals("emMaos") ||
-                valor.equals("dinheiro") ||
-                valor.equals("banco") ||
-                valor.equals("correios"))) {
-                    throw new TipoAtributoException("Metodo de pagamento invalido.");
-            }
-            historico.salvarEstado(this.empregados, this.dadosSindicais);
-            e.setMetodoPagamento(
-                valor, 
-                e.getBanco(), 
-                e.getAgencia(), 
-                e.getContaCorrente()
-            );
-        } else {
-            throw new TipoAtributoException("Atributo nao existe.");
         }
     }
 
     public void alteraEmpregado (String emp, String atributo, String valor, 
     String comissao) 
         throws EmpregadoNaoExisteException {
-            Empregado e = getEmpregadoPorId(emp);
+            Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
+            historico.salvarEstado(this.empregados, this.dadosSindicais);
             if (atributo.equals("tipo")) {
                 if (valor.equals("comissionado")) {
-                    Comissionado c = new Comissionado(e.getNome(), e.getEndereco(), 
-                    "comissionado", Utils.converteSalario(e.getSalario()), comissao);
-                    historico.salvarEstado(this.empregados, this.dadosSindicais);
-                    c.setId(e.getId());
+                    Comissionado c = (Comissionado) EmpregadoService.alteraEmpregado(
+                        emp, atributo, valor, comissao, e
+                    );
                     empregados.remove(e);
                     empregados.add(c);
                 } else if (valor.equals("horista")) {
-                    Horista h = new Horista  (
-                        e.getNome(),
-                        e.getEndereco(),
-                        "horista",
-                        comissao
+                    Horista h = (Horista) EmpregadoService.alteraEmpregado(
+                        emp, atributo, valor, comissao, e
                     );
-                    historico.salvarEstado(this.empregados, this.dadosSindicais);
-                    h.setId(e.getId());
                     empregados.remove(e);
                     empregados.add(h);
                 }
@@ -457,7 +270,7 @@ public class Controlador implements Serializable {
     public void alteraEmpregado (String emp, String atributo, String valor, 
     String idSindicato, String taxaSindical) 
     throws EmpregadoNaoExisteException {
-        Empregado e = getEmpregadoPorId(emp);
+        Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (atributo.equals("sindicalizado")) {
             for (String empregadoId : dadosSindicais.keySet()) {
                 String sindicatoId = dadosSindicais.get(empregadoId);
@@ -485,14 +298,13 @@ public class Controlador implements Serializable {
             } catch (NumberFormatException ex) {
                 throw new ComissaoException("Taxa sindical deve ser numerica.");
             }
-            
         }
     }
 
     public void alteraEmpregado (String emp, String atributo, String valor1, 
     String banco, String agencia, String contaCorrente) 
         throws EmpregadoNaoExisteException {
-            Empregado e = getEmpregadoPorId(emp);
+            Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
             if (atributo.equals("metodoPagamento")) {
                 if (valor1.equals("banco")) {
                     if (banco == null || banco.isEmpty()) {
@@ -510,38 +322,12 @@ public class Controlador implements Serializable {
             } 
         }
 
-    private Empregado getEmpSindicato (String idSindicato)
-        throws EmpregadoNaoExisteException {
-            if (idSindicato == null) {
-                throw new NaoSindicalizadoException();
-            }
-            for (String emp : dadosSindicais.keySet()) {
-                String id = dadosSindicais.get(emp);
-                if (idSindicato.equals(id)) {
-                    return getEmpregadoPorId(emp);
-                }
-            }
-            throw new NaoSindicalizadoException();
-    }
-
-    public void validarMembro (String membro) {
-        if (membro.equals("") || membro.isEmpty()) {
-                throw new IdNaoNuloException();
-        } else if (membro.charAt(0) != 's') {
-            try {
-                Integer.parseInt(membro.substring(1));
-            } catch (NumberFormatException e) {
-                throw new MembroNaoExisteException();
-            }
-        } 
-    }
-
     public void lancaTaxaServico (String membro, String data, String valor)
         throws EmpregadoNaoExisteException, DataInvalidaException, 
-        MembroNaoExisteException, IdNaoNuloException {
-            validarMembro(membro);
-            Empregado e = getEmpSindicato(membro);
-            LocalDate d = Utils.stringToDate(data, "data");
+        MembroNaoExisteException {
+            SindicatoService.validarMembro(membro);
+            Empregado e = SindicatoService.getEmpSindicato(membro, this.dadosSindicais, this.empregados);
+            LocalDate d = ConversorUtils.stringToDate(data, "data");
             Double v = Double.parseDouble(valor.replace(",", "."));
             if (v <= 0) throw new ValorNaoNuloException();
             historico.salvarEstado(empregados, dadosSindicais);
@@ -550,12 +336,12 @@ public class Controlador implements Serializable {
 
     public String getTaxasServico (String emp, String dataInicial, String dataFinal)
         throws EmpregadoNaoExisteException, DataInvalidaException {
-            Empregado e = getEmpregadoPorId(emp);
+            Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
             if (!e.getSindicalizado()) {
                 throw new NaoSindicalizadoException();
             }
-            LocalDate di = Utils.stringToDate(dataInicial, "inicial");
-            LocalDate df = Utils.stringToDate(dataFinal, "final");
+            LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
+            LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");
             if (di.isAfter(df)) {
                 throw new OrdemException();
             }
@@ -563,13 +349,13 @@ public class Controlador implements Serializable {
             for (LocalDate date = di; date.isBefore(df); date = date.plusDays(1)) {
                 total += e.getTaxaDia(date);
             }
-            return Utils.converteSalario(total);
+            return ConversorUtils.converteSalario(total);
     }
 
     public String totalFolha (String data)
         throws DataInvalidaException {
         double total = 0, totalAs = 0, totalCom = 0, totalHr = 0;
-        LocalDate d = Utils.stringToDate(data, "data");
+        LocalDate d = ConversorUtils.stringToDate(data, "data");
         for (Empregado e : empregados) {
             boolean recebeu = false;
             if (e instanceof Assalariado) {
@@ -600,9 +386,9 @@ public class Controlador implements Serializable {
         total = totalAs + totalCom + totalHr;
 
         Map<String, String> porTipo = new TreeMap<>();
-        porTipo.put("assalariado", Utils.converteSalario(totalAs));
-        porTipo.put("comissionado", Utils.converteSalario(totalCom));
-        porTipo.put("horista", Utils.converteSalario(totalHr));
+        porTipo.put("assalariado", ConversorUtils.converteSalario(totalAs));
+        porTipo.put("comissionado", ConversorUtils.converteSalario(totalCom));
+        porTipo.put("horista", ConversorUtils.converteSalario(totalHr));
         folhaPorTipo.put(data, porTipo);
 
         double arredondado = Math.round(total * 100.0)/100.0;
@@ -615,7 +401,8 @@ public class Controlador implements Serializable {
             EmpregadoNaoExisteException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(saida))) {
             double total = 0;
-            LocalDate d = Utils.stringToDate(data, "data");
+            LocalDate d = ConversorUtils.stringToDate(data, "data");
+            historico.salvarEstado(empregados, dadosSindicais);
             writer.write("FOLHA DE PAGAMENTO DO DIA " + d);
             writer.newLine();
             writer.write("====================================");
@@ -641,7 +428,7 @@ public class Controlador implements Serializable {
             if (idsDoDia != null) {
                 List<Horista> horistasDoDia = new ArrayList<>();
                 for (String ids : idsDoDia) {
-                    Empregado e = getEmpregadoPorId(ids);
+                    Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Horista) {
                         horistasDoDia.add((Horista) e);
                     }
@@ -680,9 +467,9 @@ public class Controlador implements Serializable {
                     totalDescontos += descontos;
                     totalLiquido += liquido;
 
-                    strBruto = Utils.converteSalario(bruto);
-                    strLiquido = Utils.converteSalario(liquido);
-                    strDescontos = Utils.converteSalario(descontos);
+                    strBruto = ConversorUtils.converteSalario(bruto);
+                    strLiquido = ConversorUtils.converteSalario(liquido);
+                    strDescontos = ConversorUtils.converteSalario(descontos);
                     strHn = String.format("%.0f", hnSemanal);
                     strHx = String.format("%.0f", hxSemanal);
 
@@ -702,9 +489,9 @@ public class Controlador implements Serializable {
                     if (bruto > 0) h.setUltimoPagamento(d);
                 }
 
-                strBruto = Utils.converteSalario(totalBruto);
-                strLiquido = Utils.converteSalario(totalLiquido);
-                strDescontos = Utils.converteSalario(totalDescontos);
+                strBruto = ConversorUtils.converteSalario(totalBruto);
+                strLiquido = ConversorUtils.converteSalario(totalLiquido);
+                strDescontos = ConversorUtils.converteSalario(totalDescontos);
                 strHn = String.format("%.0f", hnTotal);
                 strHx = String.format("%.0f", hxTotal);
 
@@ -742,7 +529,7 @@ public class Controlador implements Serializable {
 
                 List<Assalariado> AssalariadosDoDia = new ArrayList<>();
                 for (String ids : idsDoDia) {
-                    Empregado e = getEmpregadoPorId(ids);
+                    Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Assalariado) {
                         AssalariadosDoDia.add((Assalariado) e);
                     }
@@ -774,9 +561,9 @@ public class Controlador implements Serializable {
                     totalDescontos += descontos;
                     totalLiquido += liquido;
 
-                    strBruto = Utils.converteSalario(bruto);
-                    strLiquido = Utils.converteSalario(liquido);
-                    strDescontos = Utils.converteSalario(descontos);
+                    strBruto = ConversorUtils.converteSalario(bruto);
+                    strLiquido = ConversorUtils.converteSalario(liquido);
+                    strDescontos = ConversorUtils.converteSalario(descontos);
 
                     writer.write(String.format(
                         "%-48s %13s %9s %15s %-38s",
@@ -789,9 +576,9 @@ public class Controlador implements Serializable {
                     writer.newLine();
                 }
 
-                strBruto = Utils.converteSalario(totalBruto);
-                strLiquido = Utils.converteSalario(totalLiquido);
-                strDescontos = Utils.converteSalario(totalDescontos);
+                strBruto = ConversorUtils.converteSalario(totalBruto);
+                strLiquido = ConversorUtils.converteSalario(totalLiquido);
+                strDescontos = ConversorUtils.converteSalario(totalDescontos);
 
                 total += totalBruto;
 
@@ -826,7 +613,7 @@ public class Controlador implements Serializable {
                 double totalFixo = 0, totalVendas = 0, totalComissao = 0;
                 List<Comissionado> comissionadosDoDia = new ArrayList<>();
                 for (String ids : idsDoDia) {
-                    Empregado e = getEmpregadoPorId(ids);
+                    Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Comissionado) {
                         comissionadosDoDia.add((Comissionado) e);
                     }
@@ -863,12 +650,12 @@ public class Controlador implements Serializable {
                     totalVendas += vendas;
                     totalComissao += comissao;
 
-                    String strFixo = Utils.converteSalario(fixo);
-                    strLiquido = Utils.converteSalario(liquido);
-                    strDescontos = Utils.converteSalario(descontos);
-                    String strComissao = Utils.converteSalario(comissao);
-                    String strVendas = Utils.converteSalario(vendas);
-                    strBruto = Utils.converteSalario(bruto);
+                    String strFixo = ConversorUtils.converteSalario(fixo);
+                    strLiquido = ConversorUtils.converteSalario(liquido);
+                    strDescontos = ConversorUtils.converteSalario(descontos);
+                    String strComissao = ConversorUtils.converteSalario(comissao);
+                    String strVendas = ConversorUtils.converteSalario(vendas);
+                    strBruto = ConversorUtils.converteSalario(bruto);
 
                     writer.write(String.format(
                         "%-21s %8s %8s %8s %13s %9s %15s %-38s",
@@ -886,12 +673,12 @@ public class Controlador implements Serializable {
                     c.setUltimoPagamento(d);
                 }
 
-                strBruto = Utils.converteSalario(totalBruto);
-                strLiquido = Utils.converteSalario(totalLiquido);
-                strDescontos = Utils.converteSalario(totalDescontos);
-                String strFixo = Utils.converteSalario(totalFixo);
-                String strVendas = Utils.converteSalario(totalVendas);
-                String strComissao = Utils.converteSalario(totalComissao);
+                strBruto = ConversorUtils.converteSalario(totalBruto);
+                strLiquido = ConversorUtils.converteSalario(totalLiquido);
+                strDescontos = ConversorUtils.converteSalario(totalDescontos);
+                String strFixo = ConversorUtils.converteSalario(totalFixo);
+                String strVendas = ConversorUtils.converteSalario(totalVendas);
+                String strComissao = ConversorUtils.converteSalario(totalComissao);
 
                 total += totalBruto;
 
@@ -908,7 +695,7 @@ public class Controlador implements Serializable {
                     ));
                 writer.newLine();
                 writer.newLine();
-                String strTotal = Utils.converteSalario(total);
+                String strTotal = ConversorUtils.converteSalario(total);
                 writer.write("TOTAL FOLHA: " + strTotal);
             }
         }
@@ -927,26 +714,34 @@ public class Controlador implements Serializable {
     }
 
     public void undo () {
+        if (!status) {
+            throw new RuntimeException("Nao pode dar comandos depois de encerrarSistema.");
+        }
         try {
             Historico.Memento estadoAtual = new Historico.Memento(
-                this.empregados, this.dadosSindicais
+                new ArrayList<>(this.empregados), 
+                new TreeMap<>(this.dadosSindicais)
             );
             Historico.Memento estadoAnterior = historico.undo(estadoAtual);
             restaurarEstado(estadoAnterior);
         } catch (IllegalStateException e) {
-            System.err.println(e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
     public void redo () {
+        if (!status) {
+            throw new RuntimeException("Nao pode dar comandos depois de encerrarSistema.");
+        }
         try {
             Historico.Memento estadoAtual = new Historico.Memento(
-                this.empregados, this.dadosSindicais
+                new ArrayList<>(this.empregados), 
+                new TreeMap<>(this.dadosSindicais)
             );
             Historico.Memento estadoFuturo = historico.redo(estadoAtual);
             restaurarEstado(estadoFuturo);
         } catch (IllegalStateException e) {
-            System.err.println(e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -957,6 +752,7 @@ public class Controlador implements Serializable {
             encoder.writeObject(empregados);
             encoder.close();
             f.close();
+            this.status = false;
         } catch (Exception e) {
             e.printStackTrace();
         }

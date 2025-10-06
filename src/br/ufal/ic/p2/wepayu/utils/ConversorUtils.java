@@ -7,7 +7,7 @@ import java.time.format.DateTimeParseException;
 
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 
-public class Utils {
+public class ConversorUtils {
     public static String converteSalario (double salario) {
         String sal = String.format("%.2f", salario).replace(".", ",");
         return sal;

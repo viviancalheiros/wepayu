@@ -30,11 +30,19 @@ public class Historico implements Serializable {
         }
 
         public ArrayList<Empregado> getEmpregados () {
-            return empregados;
+            ArrayList<Empregado> copia = new ArrayList<>();
+            for (Empregado emp : empregados) {
+                try {
+                    copia.add((Empregado) emp.clone());
+                } catch (CloneNotSupportedException e) {
+                    throw new RuntimeException("Falha ao obter cópia dos empregados", e);
+                }
+            }
+        return copia;
         }
 
         public Map<String, String> getDadosSindicais () {
-            return dadosSindicais;
+            return new TreeMap<>(dadosSindicais);
         }
     }
 
