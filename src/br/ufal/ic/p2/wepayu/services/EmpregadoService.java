@@ -269,7 +269,10 @@ public class EmpregadoService {
             }
             return data.equals(ehUltimo);
         } else if (e.getAgendaPagamento().equals("semanal 2 5")) {
-            if (e instanceof Comissionado && data.getDayOfWeek() != DayOfWeek.FRIDAY) {
+            if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
+                return false;
+            }
+            if (e instanceof Comissionado) {
                 //data de inicio sempre 1/1/2005
                 LocalDate ultimo = e.getUltimoPagamentoD();
                 if (ultimo == null) {
@@ -286,7 +289,7 @@ public class EmpregadoService {
                     return diasDesdeUltimoPag == 14;
                 }
             } else {
-                
+
             }
         }
         return false;
