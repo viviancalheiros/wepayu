@@ -25,7 +25,7 @@ public class FolhaUtils {
         writer.newLine();
     }
 
-    public static void printaValorHorista (String nome, double hn, double hx, double bruto,
+    public static void printaValorHoristas (String nome, double hn, double hx, double bruto,
         double descontos, double liquido, String metodo, BufferedWriter writer)
         throws IOException {
             writer.write(String.format(
@@ -41,7 +41,7 @@ public class FolhaUtils {
             writer.newLine();
     }
 
-    public static void printaTotalHorista (double hn, double hx, double bruto, double descontos, 
+    public static void printaTotalHoristas (double hn, double hx, double bruto, double descontos, 
         double liquido, BufferedWriter writer) throws IOException {
                 writer.newLine();
                 writer.write(String.format(

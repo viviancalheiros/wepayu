@@ -301,6 +301,7 @@ public class Controlador implements Serializable {
             
             writer.write("FOLHA DE PAGAMENTO DO DIA " + d);
             writer.newLine();
+            FolhaUtils.printaHoristas(writer, d);
 
             double totalBruto = 0, totalDescontos = 0, totalLiquido = 0;
             double hnTotal = 0, hxTotal = 0;
@@ -309,8 +310,6 @@ public class Controlador implements Serializable {
             //HORISTAS
             if (idsDoDia != null) {
                 List<Horista> horistasDoDia = new ArrayList<>();
-                FolhaUtils.printaHoristas(writer, d);
-                
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Horista) {
@@ -333,7 +332,7 @@ public class Controlador implements Serializable {
                         hxSemanal = 0;
                     }
 
-                    FolhaUtils.printaValorHorista(
+                    FolhaUtils.printaValorHoristas(
                         h.getNome(), 
                         hnSemanal, 
                         hxSemanal, 
@@ -355,7 +354,7 @@ public class Controlador implements Serializable {
 
                 total += totalBruto;
 
-                FolhaUtils.printaTotalHorista(
+                FolhaUtils.printaTotalHoristas(
                     hnTotal, 
                     hxTotal, 
                     totalBruto, 
@@ -363,8 +362,9 @@ public class Controlador implements Serializable {
                     totalLiquido, 
                     writer
                 );
-            }
                 
+                FolhaUtils.printaAssalariados(writer, d);
+            
             //ASSALARIADOS
             if (idsDoDia != null) {
                 totalBruto = 0;
@@ -372,8 +372,6 @@ public class Controlador implements Serializable {
                 totalLiquido = 0;
 
                 List<Assalariado> AssalariadosDoDia = new ArrayList<>();
-                FolhaUtils.printaAssalariados(writer, d);
-
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Assalariado) {
@@ -399,7 +397,7 @@ public class Controlador implements Serializable {
                         a.getNome(), 
                         bruto, 
                         liquido, 
-                        descontos, 
+                        descontos,
                         metodo, 
                         writer
                     );
@@ -415,16 +413,15 @@ public class Controlador implements Serializable {
                 );
             }
             
+            FolhaUtils.printaComissionados(writer, d);
+
             //COMISSIONADOS
             if (idsDoDia != null) {
                 totalBruto = 0;
                 totalDescontos = 0;
                 totalLiquido = 0;
                 double totalFixo = 0, totalVendas = 0, totalComissao = 0;
-
                 List<Comissionado> comissionadosDoDia = new ArrayList<>();
-                FolhaUtils.printaComissionados(writer, d);
-
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Comissionado) {
@@ -454,11 +451,11 @@ public class Controlador implements Serializable {
                         c.getNome(), 
                         fixo, 
                         vendas, 
-                        comissao, 
+                        comissao,
                         bruto, 
                         descontos, 
                         liquido, 
-                        metodo, 
+                        metodo,
                         writer
                     );
 
@@ -470,15 +467,17 @@ public class Controlador implements Serializable {
                 FolhaUtils.printaTotalComissionados(
                     totalFixo, 
                     totalVendas, 
-                    totalComissao, 
+                    totalComissao,
                     totalBruto, 
                     totalDescontos, 
                     totalLiquido, 
                     writer
                 );
+                
+                String strTotal = ConversorUtils.converteSalario(total);
+                writer.write("TOTAL FOLHA: " + strTotal);
             }
-            String strTotal = ConversorUtils.converteSalario(total);
-            writer.write("TOTAL FOLHA: " + strTotal);
+            }
         }
     }
 
