@@ -1,21 +1,11 @@
 package br.ufal.ic.p2.wepayu.services;
 
-import br.ufal.ic.p2.wepayu.Exception.Atributo.AtributoNaoNulo;
-import br.ufal.ic.p2.wepayu.Exception.Atributo.ComissaoException;
-import br.ufal.ic.p2.wepayu.Exception.Atributo.IdNuloException;
-import br.ufal.ic.p2.wepayu.Exception.Atributo.SalarioException;
-import br.ufal.ic.p2.wepayu.Exception.Atributo.TipoAtributoException;
-import br.ufal.ic.p2.wepayu.Exception.Empregado.EmpregadoNaoExisteException;
-import br.ufal.ic.p2.wepayu.Exception.Empregado.TipoEmpregadoException;
-import br.ufal.ic.p2.wepayu.Exception.Sindicato.IdIgualException;
+import br.ufal.ic.p2.wepayu.Exception.Atributo.*;
+import br.ufal.ic.p2.wepayu.Exception.Empregado.*;
+import br.ufal.ic.p2.wepayu.Exception.Sindicato.NaoSindicalizadoException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.SindicatoException;
-import br.ufal.ic.p2.wepayu.models.Assalariado;
-import br.ufal.ic.p2.wepayu.models.Comissionado;
-import br.ufal.ic.p2.wepayu.models.Empregado;
-import br.ufal.ic.p2.wepayu.models.Horista;
-import br.ufal.ic.p2.wepayu.utils.ConversorUtils;
-import br.ufal.ic.p2.wepayu.utils.EmpregadoUtils;
-import br.ufal.ic.p2.wepayu.utils.ValidacaoUtils;
+import br.ufal.ic.p2.wepayu.models.*;
+import br.ufal.ic.p2.wepayu.utils.*;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -186,5 +176,53 @@ public class EmpregadoService {
             }
             return null;
         }
+  
+    public static String getAtributoEmpregado (Empregado e, String atributo,
+        Map<String, String> dadosSindicais, ArrayList<Empregado> empregados)
+            throws EmpregadoNaoExisteException, NaoSindicalizadoException {
+        String id = String.valueOf(e.getId())
+;        if (atributo.equals("nome")) {
+            return e.getNome();
+        } else if (atributo.equals("endereco")) {
+            return e.getEndereco();
+        } else if (atributo.equals("tipo")) {
+            return e.getTipo();
+        } else if (atributo.equals("salario")) {
+            return ConversorUtils.converteSalario(e.getSalario());
+        } else if (atributo.equals("sindicalizado")) {
+            return ConversorUtils.converteSindicalizado(e.getSindicalizado());
+        } else if (atributo.equals("comissao")) {
+            if (e instanceof Comissionado) {
+                Comissionado c = (Comissionado) e;
+                return String.valueOf(c.getComissao()).replace(".", ",");
+            } else {
+                throw new ComissaoException("Empregado nao eh comissionado.");
+            }
+        } else if (atributo.equals("metodoPagamento")) {
+            return e.getMetodoPagamento();
+        } else if (atributo.equals("banco")) {
+            if (EmpregadoService.recebeEmBanco(id, empregados)) return e.getBanco();
+            else throw new NaoBancoException();
+        } else if (atributo.equals("agencia")) {
+            if (EmpregadoService.recebeEmBanco(id, empregados)) return e.getAgencia();
+            else throw new NaoBancoException();
+        } else if (atributo.equals("contaCorrente")) {
+            if (EmpregadoService.recebeEmBanco(id, empregados)) return e.getContaCorrente();
+            else throw new NaoBancoException();
+        } else if (atributo.equals("idSindicato")) {
+            Empregado s = SindicatoService.getEmpSindicato(
+                e.getIdSindicato(), dadosSindicais, empregados
+            );
+            return s.getIdSindicato();
+        } else if (atributo.equals("taxaSindical")) {
+            Empregado s = SindicatoService.getEmpSindicato(
+                e.getIdSindicato(), dadosSindicais, empregados
+            );
+            String t = ConversorUtils.converteSalario(s.getTaxaSindical());
+            return t;
+        } else {
+            throw new AtributoNaoExisteException();
+        }
+    }
 
 }
