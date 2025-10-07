@@ -20,14 +20,10 @@ import java.util.List;
 import br.ufal.ic.p2.wepayu.Exception.Atributo.*;
 import br.ufal.ic.p2.wepayu.Exception.Data.*;
 import br.ufal.ic.p2.wepayu.Exception.Empregado.*;
-import br.ufal.ic.p2.wepayu.Exception.Horas.*;
 import br.ufal.ic.p2.wepayu.Exception.Venda.*;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.*;
 import br.ufal.ic.p2.wepayu.models.*;
-import br.ufal.ic.p2.wepayu.services.ComissionadoService;
-import br.ufal.ic.p2.wepayu.services.EmpregadoService;
-import br.ufal.ic.p2.wepayu.services.HoristaService;
-import br.ufal.ic.p2.wepayu.services.SindicatoService;
+import br.ufal.ic.p2.wepayu.services.*;
 import br.ufal.ic.p2.wepayu.utils.*;
 
 public class Controlador implements Serializable {
@@ -302,23 +298,10 @@ public class Controlador implements Serializable {
             double total = 0;
             LocalDate d = ConversorUtils.stringToDate(data, "data");
             historico.salvarEstado(empregados, dadosSindicais);
+            
             writer.write("FOLHA DE PAGAMENTO DO DIA " + d);
             writer.newLine();
-            writer.write("====================================");
-            writer.newLine();
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("===================== HORISTAS ================================================================================================");
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("Nome                                 Horas Extra Salario Bruto Descontos Salario Liquido Metodo");
-            writer.newLine();
-            writer.write("==================================== ===== ===== ============= ========= =============== ======================================");
-            writer.newLine();
-            
-            String strHn, strHx, strBruto, strLiquido, strDescontos;
+
             double totalBruto = 0, totalDescontos = 0, totalLiquido = 0;
             double hnTotal = 0, hxTotal = 0;
             List<String> idsDoDia = folha.get(data);
@@ -326,6 +309,8 @@ public class Controlador implements Serializable {
             //HORISTAS
             if (idsDoDia != null) {
                 List<Horista> horistasDoDia = new ArrayList<>();
+                FolhaUtils.printaHoristas(writer, d);
+                
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Horista) {
@@ -341,85 +326,45 @@ public class Controlador implements Serializable {
                     double descontos = h.getDescontos(d, bruto);
                     double hnSemanal = h.getHnSemanal(d.minusDays(6), d);
                     double hxSemanal = h.getHxSemanal(d.minusDays(6), d);
-                    String metodo;
+                    String metodo = FolhaUtils.formataMetodoPagamento(h);
 
                     if (bruto <= 0) {
                         hnSemanal = 0;
                         hxSemanal = 0;
                     }
 
-                    if (h.getMetodoPagamento().equals("emMaos")) {
-                        metodo = "Em maos";
-                    } else if (h.getMetodoPagamento().equals("banco")) {
-                        metodo = h.getBanco() + 
-                                ", Ag. " + h.getAgencia() + 
-                                " CC " + h.getContaCorrente();
-                    } else if (h.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, " + h.getEndereco(); 
-                    } else {
-                        metodo = h.getMetodoPagamento();
-                    }
+                    FolhaUtils.printaValorHorista(
+                        h.getNome(), 
+                        hnSemanal, 
+                        hxSemanal, 
+                        bruto, 
+                        descontos, 
+                        liquido, 
+                        metodo, 
+                        writer
+                    );
 
                     hnTotal += hnSemanal;
                     hxTotal += hxSemanal;
                     totalBruto += bruto;
                     totalDescontos += descontos;
                     totalLiquido += liquido;
-
-                    strBruto = ConversorUtils.converteSalario(bruto);
-                    strLiquido = ConversorUtils.converteSalario(liquido);
-                    strDescontos = ConversorUtils.converteSalario(descontos);
-                    strHn = String.format("%.0f", hnSemanal);
-                    strHx = String.format("%.0f", hxSemanal);
-
-                    writer.write(String.format(
-                        "%-36s %5s %5s %13s %9s %15s %-38s",
-                        h.getNome(), 
-                        strHn,
-                        strHx,
-                        strBruto,
-                        strDescontos,
-                        strLiquido,
-                        metodo
-                    ));
-                    writer.newLine();
-
                     
                     if (bruto > 0) h.setUltimoPagamento(d);
                 }
 
-                strBruto = ConversorUtils.converteSalario(totalBruto);
-                strLiquido = ConversorUtils.converteSalario(totalLiquido);
-                strDescontos = ConversorUtils.converteSalario(totalDescontos);
-                strHn = String.format("%.0f", hnTotal);
-                strHx = String.format("%.0f", hxTotal);
-
                 total += totalBruto;
 
-                writer.newLine();
-                writer.write(String.format(
-                    "%-36s %5s %5s %13s %9s %15s", 
-                    "TOTAL HORISTAS",
-                    strHn,
-                    strHx,
-                    strBruto,
-                    strDescontos,
-                    strLiquido
-                    ));
+                FolhaUtils.printaTotalHorista(
+                    hnTotal, 
+                    hxTotal, 
+                    totalBruto, 
+                    totalDescontos, 
+                    totalLiquido, 
+                    writer
+                );
+            }
                 
-            writer.newLine();
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("===================== ASSALARIADOS ============================================================================================");
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("Nome                                             Salario Bruto Descontos Salario Liquido Metodo");
-            writer.newLine();
-            writer.write("================================================ ============= ========= =============== ======================================");
-            writer.newLine();
-            
             //ASSALARIADOS
             if (idsDoDia != null) {
                 totalBruto = 0;
@@ -427,6 +372,8 @@ public class Controlador implements Serializable {
                 totalLiquido = 0;
 
                 List<Assalariado> AssalariadosDoDia = new ArrayList<>();
+                FolhaUtils.printaAssalariados(writer, d);
+
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Assalariado) {
@@ -440,19 +387,7 @@ public class Controlador implements Serializable {
                     double bruto = a.getSalario();
                     double liquido = a.getSalarioLiquido(d);
                     double descontos = a.getDescontos(d);
-                    String metodo;
-
-                    if (a.getMetodoPagamento().equals("emMaos")) {
-                        metodo = "Em maos";
-                    } else if (a.getMetodoPagamento().equals("banco")) {
-                        metodo = a.getBanco() + 
-                                ", Ag. " + a.getAgencia() + 
-                                " CC " + a.getContaCorrente();
-                    } else if (a.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, " + a.getEndereco();  
-                    } else {
-                        metodo = a.getMetodoPagamento();
-                    }
+                    String metodo = FolhaUtils.formataMetodoPagamento(a);
 
                     a.setUltimoPagamento(d);
 
@@ -460,57 +395,36 @@ public class Controlador implements Serializable {
                     totalDescontos += descontos;
                     totalLiquido += liquido;
 
-                    strBruto = ConversorUtils.converteSalario(bruto);
-                    strLiquido = ConversorUtils.converteSalario(liquido);
-                    strDescontos = ConversorUtils.converteSalario(descontos);
-
-                    writer.write(String.format(
-                        "%-48s %13s %9s %15s %-38s",
+                    FolhaUtils.printaValorAssalariados(
                         a.getNome(), 
-                        strBruto,
-                        strDescontos,
-                        strLiquido,
-                        metodo
-                    ));
-                    writer.newLine();
+                        bruto, 
+                        liquido, 
+                        descontos, 
+                        metodo, 
+                        writer
+                    );
                 }
-
-                strBruto = ConversorUtils.converteSalario(totalBruto);
-                strLiquido = ConversorUtils.converteSalario(totalLiquido);
-                strDescontos = ConversorUtils.converteSalario(totalDescontos);
 
                 total += totalBruto;
 
-                writer.newLine();
-                writer.write(String.format(
-                    "%-48s %13s %9s %15s", 
-                    "TOTAL ASSALARIADOS",
-                    strBruto,
-                    strDescontos,
-                    strLiquido
-                    ));
-                }
+                FolhaUtils.printaTotalAssalariados(
+                    totalBruto, 
+                    totalDescontos, 
+                    totalLiquido, 
+                    writer
+                );
             }
-            writer.newLine();
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("===================== COMISSIONADOS ===========================================================================================");
-            writer.newLine();
-            writer.write("===============================================================================================================================");
-            writer.newLine();
-            writer.write("Nome                  Fixo     Vendas   Comissao Salario Bruto Descontos Salario Liquido Metodo");
-            writer.newLine();
-            writer.write("===================== ======== ======== ======== ============= ========= =============== ======================================");
-            writer.newLine();
-        
+            
             //COMISSIONADOS
             if (idsDoDia != null) {
                 totalBruto = 0;
                 totalDescontos = 0;
                 totalLiquido = 0;
                 double totalFixo = 0, totalVendas = 0, totalComissao = 0;
+
                 List<Comissionado> comissionadosDoDia = new ArrayList<>();
+                FolhaUtils.printaComissionados(writer, d);
+
                 for (String ids : idsDoDia) {
                     Empregado e = EmpregadoService.getEmpregadoPorId(ids, empregados);
                     if (e instanceof Comissionado) {
@@ -527,20 +441,7 @@ public class Controlador implements Serializable {
                     double vendas = c.getTotalVendas(d);
                     double comissao = c.getComissaoTotal(d);
                     double bruto = c.getSalario(d);
-                    String metodo;
-
-
-                    if (c.getMetodoPagamento().equals("emMaos")) {
-                        metodo = "Em maos";
-                    } else if (c.getMetodoPagamento().equals("banco")) {
-                        metodo = c.getBanco() + 
-                                ", Ag. " + c.getAgencia() + 
-                                " CC " + c.getContaCorrente();
-                    } else if (c.getMetodoPagamento().equals("correios")) {
-                        metodo = "Correios, " + c.getEndereco(); 
-                    } else {
-                        metodo = c.getMetodoPagamento();
-                    }
+                    String metodo = FolhaUtils.formataMetodoPagamento(c);
 
                     totalBruto += bruto;
                     totalDescontos += descontos;
@@ -549,54 +450,35 @@ public class Controlador implements Serializable {
                     totalVendas += vendas;
                     totalComissao += comissao;
 
-                    String strFixo = ConversorUtils.converteSalario(fixo);
-                    strLiquido = ConversorUtils.converteSalario(liquido);
-                    strDescontos = ConversorUtils.converteSalario(descontos);
-                    String strComissao = ConversorUtils.converteSalario(comissao);
-                    String strVendas = ConversorUtils.converteSalario(vendas);
-                    strBruto = ConversorUtils.converteSalario(bruto);
-
-                    writer.write(String.format(
-                        "%-21s %8s %8s %8s %13s %9s %15s %-38s",
+                    FolhaUtils.printaValorComissionados(
                         c.getNome(), 
-                        strFixo,
-                        strVendas,
-                        strComissao,                       
-                        strBruto,
-                        strDescontos,
-                        strLiquido,
-                        metodo
-                    ));
-                    writer.newLine();
+                        fixo, 
+                        vendas, 
+                        comissao, 
+                        bruto, 
+                        descontos, 
+                        liquido, 
+                        metodo, 
+                        writer
+                    );
 
                     c.setUltimoPagamento(d);
                 }
 
-                strBruto = ConversorUtils.converteSalario(totalBruto);
-                strLiquido = ConversorUtils.converteSalario(totalLiquido);
-                strDescontos = ConversorUtils.converteSalario(totalDescontos);
-                String strFixo = ConversorUtils.converteSalario(totalFixo);
-                String strVendas = ConversorUtils.converteSalario(totalVendas);
-                String strComissao = ConversorUtils.converteSalario(totalComissao);
-
                 total += totalBruto;
 
-                writer.newLine();
-                writer.write(String.format(
-                    "%-21s %8s %8s %8s %13s %9s %15s", 
-                    "TOTAL COMISSIONADOS",
-                    strFixo,
-                    strVendas,
-                    strComissao,
-                    strBruto,
-                    strDescontos,
-                    strLiquido
-                    ));
-                writer.newLine();
-                writer.newLine();
-                String strTotal = ConversorUtils.converteSalario(total);
-                writer.write("TOTAL FOLHA: " + strTotal);
+                FolhaUtils.printaTotalComissionados(
+                    totalFixo, 
+                    totalVendas, 
+                    totalComissao, 
+                    totalBruto, 
+                    totalDescontos, 
+                    totalLiquido, 
+                    writer
+                );
             }
+            String strTotal = ConversorUtils.converteSalario(total);
+            writer.write("TOTAL FOLHA: " + strTotal);
         }
     }
 
