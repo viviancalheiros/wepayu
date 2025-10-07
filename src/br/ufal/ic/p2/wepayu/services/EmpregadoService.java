@@ -7,8 +7,13 @@ import br.ufal.ic.p2.wepayu.Exception.Sindicato.SindicatoException;
 import br.ufal.ic.p2.wepayu.models.*;
 import br.ufal.ic.p2.wepayu.utils.*;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.List;
 
 public class EmpregadoService {
     ArrayList<Empregado> empregados;
@@ -148,12 +153,19 @@ public class EmpregadoService {
                 e.getAgencia(), 
                 e.getContaCorrente()
             );
+        } else if (atributo.equals("agendaPagamento")) {
+            if (!(valor.equals("semanal 2 5") ||
+                (valor.equals("mensal $") ||
+                valor.equals("semanal 5")))) {
+                    throw new TipoAtributoException("Agenda de pagamento nao esta disponivel");
+                }
+            e.setAgendaPagamento(valor);
         } else {
             throw new TipoAtributoException("Atributo nao existe.");
         }
         return e;
     }
-    
+
     public static Empregado alteraEmpregado (String emp, String atributo, String valor, 
     String comissao, Empregado e) 
         throws EmpregadoNaoExisteException {
@@ -220,9 +232,64 @@ public class EmpregadoService {
             );
             String t = ConversorUtils.converteSalario(s.getTaxaSindical());
             return t;
+        } else if (atributo.equals("agendaPagamento")) {
+            return e.getAgendaPagamento();
         } else {
             throw new AtributoNaoExisteException();
         }
+    }
+
+    public static void removerIdDatas (String id, Map<String, List<String>> folha) {
+        folha.keySet().forEach(data -> {
+            folha.computeIfPresent(data, (k, lista) -> {
+                lista.remove(id);
+
+                if (lista.isEmpty()) return null;
+                else return lista;
+            });
+        });
+    }
+
+    public static void mudaFolhaEmpregado (Empregado e, String agendaNova, 
+        Map<String, List<String>> folha) {
+            String id = String.valueOf(e.getId());
+            removerIdDatas(id, folha);
+    }
+
+    public static boolean recebeHoje(LocalDate data, Empregado e) {
+        if (e.getAgendaPagamento().equals("semanal 5")) {
+            return data.getDayOfWeek() == DayOfWeek.FRIDAY;
+        } else if (e.getAgendaPagamento().equals("mensal $")) {
+            YearMonth mes = YearMonth.from(data);
+            LocalDate ehUltimo = mes.atEndOfMonth();
+            if (ehUltimo.getDayOfWeek() == DayOfWeek.SATURDAY) {
+                ehUltimo = ehUltimo.minusDays(1);
+            } else if (ehUltimo.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                ehUltimo = ehUltimo.minusDays(2);
+            }
+            return data.equals(ehUltimo);
+        } else if (e.getAgendaPagamento().equals("semanal 2 5")) {
+            if (e instanceof Comissionado && data.getDayOfWeek() != DayOfWeek.FRIDAY) {
+                //data de inicio sempre 1/1/2005
+                LocalDate ultimo = e.getUltimoPagamentoD();
+                if (ultimo == null) {
+                    final LocalDate inicio = LocalDate.of(2005, 1, 1);
+                    ultimo = e.getDataInicioD();
+                    if (inicio == null) return false;
+                    long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
+                    if (diasDesdeInicio < 13) return false;
+
+                    long diasDesdePag = diasDesdeInicio - 13;
+                    return diasDesdePag % 14 == 0;
+                } else {
+                    long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
+                    return diasDesdeUltimoPag == 14;
+                }
+            } else {
+                
+            }
+        }
+        return false;
     }
 
 }

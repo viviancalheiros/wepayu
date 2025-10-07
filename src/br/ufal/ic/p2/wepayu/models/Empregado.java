@@ -28,6 +28,8 @@ public abstract class Empregado implements Serializable, Cloneable {
     private LocalDate ultimoPagamento;
     private LocalDate dataInicio;
 
+    private String agendaPagamento;
+
     public Empregado () {
 
     }
@@ -50,6 +52,8 @@ public abstract class Empregado implements Serializable, Cloneable {
 
         this.ultimoPagamento = null;
         this.dataInicio = null;
+
+        this.agendaPagamento = null;
     }
 
     public long getId () {
@@ -192,6 +196,14 @@ public abstract class Empregado implements Serializable, Cloneable {
         Empregado clone = (Empregado) super.clone();
         clone.taxaDia = new TreeMap<>(this.taxaDia);
         return clone;
+    }
+
+    public String getAgendaPagamento () {
+        return this.agendaPagamento;
+    }
+
+    public void setAgendaPagamento (String agendaPagamento) {
+        this.agendaPagamento = agendaPagamento;
     }
 
 }

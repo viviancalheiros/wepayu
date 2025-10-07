@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.wepayu.services;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
@@ -64,4 +65,7 @@ public class HoristaService {
         }
         return ConversorUtils.formatarHoras(horas);
     }
+
+    
+
 }

@@ -2,7 +2,6 @@ package br.ufal.ic.p2.wepayu.models;
 
 import java.util.TreeMap;
 import java.util.Map;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -20,6 +19,7 @@ public class Comissionado extends Empregado {
         super(nome, endereco, tipo, salario);
         this.comissao = Double.parseDouble(comissao.replace(",","."));
         setDataInicio(LocalDate.of(2005, 1, 1));
+        setAgendaPagamento("semanal 2 5");
     }
 
     public double getComissao () {
@@ -46,29 +46,6 @@ public class Comissionado extends Empregado {
     
     public void setVendasMap(Map<String, Double> vendas) {
         this.vendas = vendas;
-    }
-
-
-    public boolean recebeHoje (LocalDate data) {
-        if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
-            return false;
-        }
-        //data de inicio sempre 1/1/2005
-        LocalDate ultimo = getUltimoPagamentoD();
-
-        if (ultimo == null) {
-            final LocalDate inicio = LocalDate.of(2005, 1, 1);
-            ultimo = getDataInicioD();
-            if (inicio == null) return false;
-            long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
-            if (diasDesdeInicio < 13) return false;
-
-            long diasDesdePag = diasDesdeInicio - 13;
-            return diasDesdePag % 14 == 0;
-        } else {
-            long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
-            return diasDesdeUltimoPag == 14;
-        }
     }
 
     private double calculaTaxas (LocalDate inicio, LocalDate fim) {

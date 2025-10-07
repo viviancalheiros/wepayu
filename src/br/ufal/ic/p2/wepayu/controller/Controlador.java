@@ -30,8 +30,10 @@ public class Controlador implements Serializable {
     Scanner s = new Scanner(System.in);
     ArrayList<Empregado> empregados = new ArrayList<>();
     Map<String, String> dadosSindicais = new TreeMap<>(); //id, idSindical
+
     Map<String, List<String>> folha = new TreeMap<>(); //data, id
     Map<String, Map<String, String>> folhaPorTipo = new TreeMap<>(); //data -> (tipo, total)
+    
     private boolean status = false;
     Historico historico = new Historico();
 
@@ -152,7 +154,10 @@ public class Controlador implements Serializable {
         if (atributo.equals("tipo")) {
             empregados.remove(e);
             empregados.add(novo);
+        } else if (atributo.equals("agendaPagamento")) {
+            EmpregadoService.mudaFolhaEmpregado(e, valor, folha);
         }
+        e = novo;
     }
 
     public void alteraEmpregado (String emp, String atributo, String valor, 
@@ -255,19 +260,19 @@ public class Controlador implements Serializable {
             boolean recebeu = false;
             if (e instanceof Assalariado) {
                 Assalariado a = (Assalariado) e;
-                if (a.recebeHoje(d)) {
+                if (EmpregadoService.recebeHoje(d, e)) {
                     recebeu = true;
                     totalAs += a.getSalario();
                 }
             } else if (e instanceof Comissionado) {
                 Comissionado c = (Comissionado) e;
-                if (c.recebeHoje(d)) {
+                if (EmpregadoService.recebeHoje(d, e)) {
                     recebeu = true;
                     totalCom += c.getSalario(d);
                 }
             } else if (e instanceof Horista) {
                 Horista h = (Horista) e;
-                if (h.recebeHoje(d)) {
+                if (EmpregadoService.recebeHoje(d, e)) {
                     recebeu = true;
                     totalHr += h.getSalarioBruto(d);
                 }

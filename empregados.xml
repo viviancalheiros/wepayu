@@ -2,7 +2,106 @@
 <java version="17.0.12" class="java.beans.XMLDecoder">
  <object class="java.util.ArrayList">
   <void method="add">
+   <object class="br.ufal.ic.p2.wepayu.models.Comissionado" id="Comissionado0">
+    <void property="agendaPagamento">
+     <string>semanal 5</string>
+    </void>
+    <void property="comissao">
+     <double>0.11</double>
+    </void>
+    <void property="endereco">
+     <string>Rua Gama, 3 - Corinto</string>
+    </void>
+    <void property="id">
+     <long>50</long>
+    </void>
+    <void property="metodoPagamento">
+     <string>emMaos</string>
+    </void>
+    <void property="nome">
+     <string>Gama Tres Comissionado</string>
+    </void>
+    <void property="salario">
+     <double>2800.0</double>
+    </void>
+    <void property="tipo">
+     <string>comissionado</string>
+    </void>
+    <void property="vendasMap">
+     <void method="put">
+      <string>1/1/2005</string>
+      <double>100.0</double>
+     </void>
+     <void method="put">
+      <string>16/1/2005</string>
+      <double>200.0</double>
+     </void>
+     <void method="put">
+      <string>2/1/2005</string>
+      <double>200.0</double>
+     </void>
+     <void method="put">
+      <string>30/1/2005</string>
+      <double>300.0</double>
+     </void>
+    </void>
+   </object>
+  </void>
+  <void method="add">
+   <object class="br.ufal.ic.p2.wepayu.models.Horista">
+    <void property="agendaPagamento">
+     <string>mensal $</string>
+    </void>
+    <void property="endereco">
+     <string>Rua dos Jooes, 333 - Campina Grande</string>
+    </void>
+    <void property="id">
+     <long>51</long>
+    </void>
+    <void property="metodoPagamento">
+     <string>emMaos</string>
+    </void>
+    <void property="nome">
+     <string>Joao da Silva</string>
+    </void>
+    <void property="salario">
+     <double>23.0</double>
+    </void>
+    <void property="tipo">
+     <string>horista</string>
+    </void>
+   </object>
+  </void>
+  <void method="add">
+   <object class="br.ufal.ic.p2.wepayu.models.Assalariado">
+    <void property="agendaPagamento">
+     <string>semanal 2 5</string>
+    </void>
+    <void property="endereco">
+     <string>Rua das Marias, 333 - Campina Grande</string>
+    </void>
+    <void property="id">
+     <long>52</long>
+    </void>
+    <void property="metodoPagamento">
+     <string>emMaos</string>
+    </void>
+    <void property="nome">
+     <string>Mariazinha</string>
+    </void>
+    <void property="salario">
+     <double>2300.45</double>
+    </void>
+    <void property="tipo">
+     <string>assalariado</string>
+    </void>
+   </object>
+  </void>
+  <void method="add">
    <object class="br.ufal.ic.p2.wepayu.models.Comissionado">
+    <void property="agendaPagamento">
+     <string>semanal 5</string>
+    </void>
     <void property="comissao">
      <double>0.05</double>
     </void>
@@ -10,7 +109,7 @@
      <string>Rua dos Bufoes, 333 - Campina Grande</string>
     </void>
     <void property="id">
-     <long>40</long>
+     <long>53</long>
     </void>
     <void property="metodoPagamento">
      <string>emMaos</string>
@@ -19,7 +118,7 @@
      <string>Gaiato Vendedor</string>
     </void>
     <void property="salario">
-     <double>2300.0</double>
+     <double>2300.45</double>
     </void>
     <void property="tipo">
      <string>comissionado</string>

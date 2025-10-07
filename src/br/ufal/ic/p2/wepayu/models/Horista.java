@@ -1,6 +1,5 @@
 package br.ufal.ic.p2.wepayu.models;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -18,6 +17,7 @@ public class Horista extends Empregado {
 
     public Horista(String nome, String endereco, String tipo, String salario) {
         super(nome, endereco, tipo, salario);
+        setAgendaPagamento("semanal 5");
     }
     
     public double getHorasNormais (LocalDate data) {
@@ -57,10 +57,6 @@ public class Horista extends Empregado {
         this.horasExtras = horas;
     }
 
-    public boolean recebeHoje(LocalDate data) {
-        return data.getDayOfWeek() == DayOfWeek.FRIDAY;
-    }
-
     private double calculaTaxas(LocalDate inicio, LocalDate fim) {
         double total = 0;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
@@ -96,7 +92,10 @@ public class Horista extends Empregado {
     }
 
     public double getSalarioBruto (LocalDate data) {
-        LocalDate inicio = data.minusDays(6);
+        LocalDate inicio = getUltimoPagamentoD();
+        if (inicio == null) {
+            inicio = getDataInicioD();
+        }
         double hn = getHnSemanal(inicio, data);
         double hx = getHxSemanal(inicio, data);
 

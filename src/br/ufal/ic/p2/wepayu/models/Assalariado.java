@@ -1,11 +1,9 @@
 package br.ufal.ic.p2.wepayu.models;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.time.DayOfWeek;
 
 public class Assalariado extends Empregado {
 
@@ -16,19 +14,7 @@ public class Assalariado extends Empregado {
     public Assalariado (String nome, String endereco, String tipo, String salario) {
         super(nome, endereco, tipo, salario);
         setDataInicio(LocalDate.of(2005, 1, 1));
-    }
-
-    public boolean recebeHoje (LocalDate data) {
-        YearMonth mes = YearMonth.from(data);
-        LocalDate ehUltimo = mes.atEndOfMonth();
-
-        if (ehUltimo.getDayOfWeek() == DayOfWeek.SATURDAY) {
-            ehUltimo = ehUltimo.minusDays(1);
-        } else if (ehUltimo.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            ehUltimo = ehUltimo.minusDays(2);
-        }
-
-        return data.equals(ehUltimo);
+        setAgendaPagamento("mensal $");
     }
 
     private double calculaTaxas (LocalDate inicio, LocalDate fim) {
