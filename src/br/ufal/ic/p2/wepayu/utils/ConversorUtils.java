@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import br.ufal.ic.p2.wepayu.Exception.AgendaException;
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 
 public class ConversorUtils {
@@ -72,6 +73,22 @@ public class ConversorUtils {
 
     public static double truncar(double valor) {
         return Math.floor(valor * 100) / 100.0;
+    }
+
+    public static int stringToInt (String numero) {
+        int num;
+        try {
+            num = Integer.parseInt(numero);
+        } catch (NumberFormatException e) {
+            if (!(numero.equals("$"))) {
+                throw new AgendaException("Descricao de agenda invalida");
+            }
+            return -1;
+        }
+        if (num < 1 || num > 5) {
+            throw new AgendaException("Descricao de agenda invalida");
+        }
+        return num;
     }
 
 }

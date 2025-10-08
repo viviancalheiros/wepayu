@@ -4,6 +4,7 @@ import br.ufal.ic.p2.wepayu.Exception.Empregado.EmpregadoNaoExisteException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.IdNaoNuloException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.MembroNaoExisteException;
 import br.ufal.ic.p2.wepayu.controller.Controlador;
+import br.ufal.ic.p2.wepayu.utils.AgendaUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -127,6 +128,10 @@ public class Facade implements Serializable {
 
     public void redo () {
         c.redo();
+    }
+
+    public void criarAgendaDePagamentos (String descricao) {
+        c.criarAgendaDePagamentos(descricao);
     }
 
     public void encerrarSistema () {

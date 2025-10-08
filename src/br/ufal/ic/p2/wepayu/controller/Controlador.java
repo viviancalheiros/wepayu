@@ -11,6 +11,7 @@ import java.beans.XMLDecoder;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Scanner;
 import java.util.Map;
@@ -33,6 +34,8 @@ public class Controlador implements Serializable {
 
     Map<String, List<String>> folha = new TreeMap<>(); //data, id
     Map<String, Map<String, String>> folhaPorTipo = new TreeMap<>(); //data -> (tipo, total)
+
+    ArrayList<String> tiposAgenda = new ArrayList<>(Arrays.asList("mensal $", "semanal 5", "semanal 2 5"));
     
     private boolean status = false;
     Historico historico = new Historico();
@@ -529,6 +532,12 @@ public class Controlador implements Serializable {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    public void criarAgendaDePagamentos (String descricao) {
+        AgendaUtils.verificaAgenda(descricao, tiposAgenda);
+        
+    }
+
 
     public void encerrarSistema () {
         try {
