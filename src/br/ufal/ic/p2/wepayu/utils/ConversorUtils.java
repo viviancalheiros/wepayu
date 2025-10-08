@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException;
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 
 public class ConversorUtils {
+    
     public static String converteSalario (double salario) {
         String sal = String.format("%.2f", salario).replace(".", ",");
         return sal;
@@ -68,4 +69,9 @@ public class ConversorUtils {
         }
         throw new DataInvalidaException(tipo);
     }
+
+    public static double truncar(double valor) {
+        return Math.floor(valor * 100) / 100.0;
+    }
+
 }

@@ -1,8 +1,6 @@
 package br.ufal.ic.p2.wepayu.services;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import br.ufal.ic.p2.wepayu.Exception.Data.*;
 import br.ufal.ic.p2.wepayu.Exception.Empregado.*;

@@ -98,10 +98,15 @@ public class Horista extends Empregado {
         }
         double hn = getHnSemanal(inicio, data);
         double hx = getHxSemanal(inicio, data);
+         
+        if (this.getAgendaPagamento().equals("semanal 2 5")) {
+            hn = getHnSemanal(data.minusDays(14), data);
+            hx = getHxSemanal(data.minusDays(14), data);
+        }
 
         double valorHora = getSalario();
         double salarioBruto = (hn * valorHora) + (hx * valorHora * 1.5);
-        
+
         if (salarioBruto < 0) salarioBruto = 0;
         return Math.max(salarioBruto, 0);
     }

@@ -1,6 +1,9 @@
 package br.ufal.ic.p2.wepayu.models;
 
 import java.util.TreeMap;
+
+import br.ufal.ic.p2.wepayu.utils.ConversorUtils;
+
 import java.util.Map;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -77,16 +80,18 @@ public class Comissionado extends Empregado {
         return descontos;
     }
 
-    private double truncar(double valor) {
-        return Math.floor(valor * 100) / 100.0;
-    }
-
     public double getSalario (LocalDate data) {
-        double salarioBase = truncar(getSalario() * 12 / 26.0);
+        double salarioBase = ConversorUtils.truncar(getSalario() * 12 / 26.0);
+
+        if (this.getAgendaPagamento().equals("mensal $")) {
+            salarioBase = ConversorUtils.truncar(getSalario());
+        } else if (this.getAgendaPagamento().equals("semanal 5")) {
+            salarioBase = ConversorUtils.truncar(getSalario() * 12 / 52.0);
+        }
     
         double totalVendas = getTotalVendas(data);
 
-        double comissaoVendas = truncar(totalVendas * getComissao());
+        double comissaoVendas = ConversorUtils.truncar(totalVendas * getComissao());
         double salarioBruto = salarioBase + comissaoVendas;
 
         if (salarioBruto < 0) return 0;
@@ -94,14 +99,14 @@ public class Comissionado extends Empregado {
     }
 
     public double getFixo (LocalDate data) {
-        double totalVendas = truncar(getTotalVendas(data));
-        double fixo = getSalario(data) - truncar(totalVendas*getComissao());
+        double totalVendas = ConversorUtils.truncar(getTotalVendas(data));
+        double fixo = getSalario(data) - ConversorUtils.truncar(totalVendas*getComissao());
         return fixo;
     }
 
     public double getSalarioLiquido (LocalDate data) {
         double totalVendas = getTotalVendas(data);
-        double salario = getFixo(data) + truncar(totalVendas*getComissao());
+        double salario = getFixo(data) + ConversorUtils.truncar(totalVendas*getComissao());
         double descontos = getDescontos(data);
         return salario - descontos;
     }
@@ -116,6 +121,12 @@ public class Comissionado extends Empregado {
             inicioPeriodo = getDataInicioD();
         } else {
             inicioPeriodo = getUltimoPagamentoD();
+        }
+
+        if (this.getAgendaPagamento().equals("mensal $")) {
+            inicioPeriodo = dataPagamento.withDayOfMonth(1);
+        } else if (this.getAgendaPagamento().equals("semanal 5")) {
+            inicioPeriodo = dataPagamento.minusDays(6);
         }
         
         for (Map.Entry<String, Double> entry : vendas.entrySet()) {
@@ -134,8 +145,8 @@ public class Comissionado extends Empregado {
     }
 
     public double getComissaoTotal (LocalDate data) {
-        double vendas = truncar(getTotalVendas(data));
-        return truncar(vendas*getComissao());
+        double vendas = ConversorUtils.truncar(getTotalVendas(data));
+        return ConversorUtils.truncar(vendas*getComissao());
     }
 
     @Override

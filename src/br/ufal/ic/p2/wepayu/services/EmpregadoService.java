@@ -19,10 +19,6 @@ public class EmpregadoService {
     ArrayList<Empregado> empregados;
     Map<String, String> dadosSindicais;
 
-    public EmpregadoService () {
-
-    }
-
     public static Empregado getEmpregadoPorId (String emp, ArrayList<Empregado> empregados) 
         throws EmpregadoNaoExisteException {
             if (emp == null || emp.isEmpty()) {
@@ -272,24 +268,20 @@ public class EmpregadoService {
             if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
                 return false;
             }
-            if (e instanceof Comissionado) {
-                //data de inicio sempre 1/1/2005
-                LocalDate ultimo = e.getUltimoPagamentoD();
-                if (ultimo == null) {
-                    final LocalDate inicio = LocalDate.of(2005, 1, 1);
-                    ultimo = e.getDataInicioD();
-                    if (inicio == null) return false;
-                    long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
-                    if (diasDesdeInicio < 13) return false;
+            //data de inicio sempre 1/1/2005
+            LocalDate ultimo = e.getUltimoPagamentoD();
+            if (ultimo == null) {
+                final LocalDate inicio = LocalDate.of(2005, 1, 1);
+                ultimo = e.getDataInicioD();
+                if (inicio == null) return false;
+                long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
+                if (diasDesdeInicio < 13) return false;
 
-                    long diasDesdePag = diasDesdeInicio - 13;
-                    return diasDesdePag % 14 == 0;
-                } else {
-                    long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
-                    return diasDesdeUltimoPag == 14;
-                }
+                long diasDesdePag = diasDesdeInicio - 13;
+                return diasDesdePag % 14 == 0;
             } else {
-
+                long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
+                return diasDesdeUltimoPag == 14;
             }
         }
         return false;

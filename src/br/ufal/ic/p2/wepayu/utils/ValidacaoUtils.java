@@ -42,4 +42,5 @@ public class ValidacaoUtils {
             throw new ComissaoException("Comissao deve ser numerica.");
         }
     }
+
 }
