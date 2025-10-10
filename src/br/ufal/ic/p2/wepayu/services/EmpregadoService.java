@@ -2,6 +2,7 @@ package br.ufal.ic.p2.wepayu.services;
 
 import br.ufal.ic.p2.wepayu.Exception.Atributo.*;
 import br.ufal.ic.p2.wepayu.Exception.Empregado.*;
+import br.ufal.ic.p2.wepayu.Exception.AgendaException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.NaoSindicalizadoException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.SindicatoException;
 import br.ufal.ic.p2.wepayu.models.*;
@@ -9,7 +10,6 @@ import br.ufal.ic.p2.wepayu.utils.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Map;
@@ -81,7 +81,7 @@ public class EmpregadoService {
     }
 
     public static Empregado alteraEmpregado (String emp, String atributo, String valor, 
-        Empregado e, ArrayList<Empregado> empregados)
+        Empregado e, ArrayList<Empregado> empregados, List<String> agenda)
         throws EmpregadoNaoExisteException {
 
         if (atributo.equals("nome")) {
@@ -150,12 +150,11 @@ public class EmpregadoService {
                 e.getContaCorrente()
             );
         } else if (atributo.equals("agendaPagamento")) {
-            if (!(valor.equals("semanal 2 5") ||
-                (valor.equals("mensal $") ||
-                valor.equals("semanal 5")))) {
-                    throw new TipoAtributoException("Agenda de pagamento nao esta disponivel");
-                }
-            e.setAgendaPagamento(valor);
+            if (AgendaUtils.jaExiste(agenda, valor)) {
+                e.setAgendaPagamento(valor);
+            } else {
+                throw new AgendaException("Agenda de pagamento nao esta disponivel");
+            }
         } else {
             throw new TipoAtributoException("Atributo nao existe.");
         }
@@ -253,35 +252,59 @@ public class EmpregadoService {
     }
 
     public static boolean recebeHoje(LocalDate data, Empregado e) {
-        if (e.getAgendaPagamento().equals("semanal 5")) {
-            return data.getDayOfWeek() == DayOfWeek.FRIDAY;
-        } else if (e.getAgendaPagamento().equals("mensal $")) {
-            YearMonth mes = YearMonth.from(data);
-            LocalDate ehUltimo = mes.atEndOfMonth();
-            if (ehUltimo.getDayOfWeek() == DayOfWeek.SATURDAY) {
-                ehUltimo = ehUltimo.minusDays(1);
-            } else if (ehUltimo.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                ehUltimo = ehUltimo.minusDays(2);
-            }
-            return data.equals(ehUltimo);
-        } else if (e.getAgendaPagamento().equals("semanal 2 5")) {
-            if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
-                return false;
-            }
-            //data de inicio sempre 1/1/2005
-            LocalDate ultimo = e.getUltimoPagamentoD();
-            if (ultimo == null) {
-                final LocalDate inicio = LocalDate.of(2005, 1, 1);
-                ultimo = e.getDataInicioD();
-                if (inicio == null) return false;
-                long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
-                if (diasDesdeInicio < 13) return false;
+        String partes[] = (e.getAgendaPagamento()).split(" ");
+        if (partes[0].equals("mensal")) {
+            return EmpregadoUtils.verificaMensal(data, partes);
+        } else if (partes[0].equals("semanal")) {
+            if (partes.length == 2) {
+                return EmpregadoUtils.verificaSemanal1(data, partes[1]);
+            } else if (partes.length == 3) {
+                if (e.getAgendaPagamento().equals("semanal 2 5")) {
+                    if (data.getDayOfWeek() != DayOfWeek.FRIDAY) {
+                        return false;
+                    }
+                    //data de inicio sempre 1/1/2005
+                    LocalDate ultimo = e.getUltimoPagamentoD();
+                    if (ultimo == null) {
+                        final LocalDate inicio = LocalDate.of(2005, 1, 1);
+                        ultimo = e.getDataInicioD();
+                        if (inicio == null) return false;
+                        long diasDesdeInicio = ChronoUnit.DAYS.between(inicio, data);
+                        if (diasDesdeInicio < 13) return false;
 
-                long diasDesdePag = diasDesdeInicio - 13;
-                return diasDesdePag % 14 == 0;
-            } else {
-                long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
-                return diasDesdeUltimoPag == 14;
+                        long diasDesdePag = diasDesdeInicio - 13;
+                        return diasDesdePag % 14 == 0;
+                    } else {
+                        long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
+                        return diasDesdeUltimoPag == 14;
+                    }
+                } else {
+                    int intervaloSemanas = ConversorUtils.stringToInt(partes[1]);
+                    int diaDaSemana = ConversorUtils.stringToInt(partes[2]);
+                    
+                    if (!(EmpregadoUtils.verificaSemanal1(data, partes[2]))) {
+                        return false;
+                    }
+                    int intervaloDias = intervaloSemanas * 7;
+                    LocalDate ultimo = e.getUltimoPagamentoD();
+
+                    if (ultimo == null) {
+                        LocalDate inicio = e.getDataInicioD();
+                        if (inicio == null) return false;
+                        DayOfWeek diaEsperado = DayOfWeek.of(diaDaSemana);
+                        while (inicio.getDayOfWeek() != diaEsperado) {
+                            inicio = inicio.plusDays(1);
+                        }
+                        if (data.isBefore(inicio)) return false;
+                        long diasDesdePag = ChronoUnit.DAYS.between(inicio, data);
+                        return diasDesdePag % intervaloDias == 0; 
+                    } else {
+                        long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
+                        return diasDesdeUltimoPag == intervaloDias;
+                    }
+                }
+                
+                
             }
         }
         return false;

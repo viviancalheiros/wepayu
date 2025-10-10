@@ -35,7 +35,9 @@ public class Controlador implements Serializable {
     Map<String, List<String>> folha = new TreeMap<>(); //data, id
     Map<String, Map<String, String>> folhaPorTipo = new TreeMap<>(); //data -> (tipo, total)
 
-    ArrayList<String> tiposAgenda = new ArrayList<>(Arrays.asList("mensal $", "semanal 5", "semanal 2 5"));
+    List<String> tiposAgenda = new ArrayList<>();
+
+    private static final List<String> agendasPadrao = Arrays.asList("mensal $", "semanal 5", "semanal 2 5");
     
     private boolean status = false;
     Historico historico = new Historico();
@@ -57,6 +59,8 @@ public class Controlador implements Serializable {
         historico.salvarEstado(empregados, dadosSindicais);
         empregados.clear();
         dadosSindicais.clear();
+        tiposAgenda.clear();
+        tiposAgenda.addAll(agendasPadrao);
     }
 
     public String criarEmpregado (String nome, String endereco, String tipo, String salario)
@@ -153,7 +157,8 @@ public class Controlador implements Serializable {
             
         Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         historico.salvarEstado(this.empregados, this.dadosSindicais);
-        Empregado novo = EmpregadoService.alteraEmpregado(emp, atributo, valor, e, empregados);
+        Empregado novo = EmpregadoService.alteraEmpregado(emp, atributo, valor, e, 
+            this.empregados, this.tiposAgenda);
         if (atributo.equals("tipo")) {
             empregados.remove(e);
             empregados.add(novo);
@@ -534,10 +539,8 @@ public class Controlador implements Serializable {
     }
 
     public void criarAgendaDePagamentos (String descricao) {
-        AgendaUtils.verificaAgenda(descricao, tiposAgenda);
-        
+        AgendaUtils.verificaCriaAgenda(descricao, tiposAgenda);
     }
-
 
     public void encerrarSistema () {
         try {

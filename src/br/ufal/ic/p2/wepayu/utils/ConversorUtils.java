@@ -75,7 +75,7 @@ public class ConversorUtils {
         return Math.floor(valor * 100) / 100.0;
     }
 
-    public static int stringToInt (String numero) {
+    public static int stringToIntLim (String numero, int limiteinf, int limitesup) {
         int num;
         try {
             num = Integer.parseInt(numero);
@@ -85,10 +85,20 @@ public class ConversorUtils {
             }
             return -1;
         }
-        if (num < 1 || num > 5) {
+        if (num < limiteinf || num > limitesup) {
             throw new AgendaException("Descricao de agenda invalida");
         }
         return num;
+    }
+
+    public static int stringToInt (String num) {
+        int numero;
+        try {
+            numero = Integer.parseInt(num);
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException();
+        }
+        return numero;
     }
 
 }
