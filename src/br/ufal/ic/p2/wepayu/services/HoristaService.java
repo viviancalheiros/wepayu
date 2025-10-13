@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 import br.ufal.ic.p2.wepayu.Exception.Data.OrdemException;
 import br.ufal.ic.p2.wepayu.Exception.Empregado.EmpregadoNaoExisteException;
-import br.ufal.ic.p2.wepayu.Exception.Empregado.TipoEmpregadoException;
 import br.ufal.ic.p2.wepayu.Exception.Horas.HoraNulaException;
 import br.ufal.ic.p2.wepayu.models.Empregado;
 import br.ufal.ic.p2.wepayu.models.Horista;
@@ -16,7 +15,7 @@ public class HoristaService {
     public static void lancaCartao (Empregado e, String data, String horas)
             throws EmpregadoNaoExisteException, DataInvalidaException {
         if (!(e instanceof Horista)) {
-            throw new TipoEmpregadoException("Empregado nao eh horista.");
+            throw new IllegalStateException("Empregado nao eh horista.");
         }
         Horista h = (Horista) e;
         LocalDate d = ConversorUtils.stringToDate(data, "data");
@@ -32,7 +31,7 @@ public class HoristaService {
             throws EmpregadoNaoExisteException, DataInvalidaException {
 
         if (!(e instanceof Horista)) {
-            throw new TipoEmpregadoException("Empregado nao eh horista.");
+            throw new IllegalStateException("Empregado nao eh horista.");
         }
         LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
         LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");
@@ -50,7 +49,7 @@ public class HoristaService {
     public static String getHorasExtrasTrabalhadas (Empregado e, String dataInicial, String dataFinal) 
             throws EmpregadoNaoExisteException, DataInvalidaException {
         if (!(e instanceof Horista)) {
-            throw new TipoEmpregadoException("Empregado nao eh horista.");
+            throw new IllegalStateException("Empregado nao eh horista.");
         }
         LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
         LocalDate df = ConversorUtils.stringToDate(dataFinal, "final");

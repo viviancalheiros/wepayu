@@ -60,14 +60,15 @@ public class Assalariado extends Empregado {
     @Override
     public double getSalario () {
         double salario = super.getSalario();
-        String agenda = EmpregadoUtils.semanaOuMes(this.getAgendaPagamento());
         String partes[] = (this.getAgendaPagamento()).split(" ");
         
-        if (agenda.equals("semanal")) {
+        if (partes[0].equals("semanal")) {
             if (partes.length == 2) {
                 salario = ConversorUtils.truncar(salario * 12 / 52.0);
             } else {
-                salario = ConversorUtils.truncar(salario * 12 / 26.0);
+                int semanas = ConversorUtils.stringToInt(partes[1]);
+                double frequencia = 52.0 / (double) semanas;
+                salario = ConversorUtils.truncar(salario * 12 / frequencia);
             }
         }
         return salario;

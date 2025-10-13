@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 
-import br.ufal.ic.p2.wepayu.Exception.Atributo.TipoAtributoException;
 import br.ufal.ic.p2.wepayu.models.Assalariado;
 import br.ufal.ic.p2.wepayu.models.Comissionado;
 import br.ufal.ic.p2.wepayu.models.Empregado;
@@ -17,7 +16,7 @@ public class EmpregadoUtils {
         if (!(novoTipo.equals("comissionado") ||
                 novoTipo.equals("horista") ||
                 novoTipo.equals("assalariado"))) {
-            throw new TipoAtributoException("Tipo invalido.");
+            throw new IllegalStateException("Tipo invalido.");
         }
         if (novoTipo.equals("assalariado")) {
             Assalariado a = new Assalariado(
@@ -48,7 +47,7 @@ public class EmpregadoUtils {
             c.setId(e.getId());
             return c;
         }
-        throw new TipoAtributoException("Tipo invalido.");
+        throw new IllegalStateException("Tipo invalido.");
     }
 
     public static String semanaOuMes (String agenda) {

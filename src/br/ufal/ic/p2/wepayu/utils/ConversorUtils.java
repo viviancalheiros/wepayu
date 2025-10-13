@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-import br.ufal.ic.p2.wepayu.Exception.AgendaException;
 import br.ufal.ic.p2.wepayu.Exception.Data.DataInvalidaException;
 
 public class ConversorUtils {
@@ -81,12 +80,12 @@ public class ConversorUtils {
             num = Integer.parseInt(numero);
         } catch (NumberFormatException e) {
             if (!(numero.equals("$"))) {
-                throw new AgendaException("Descricao de agenda invalida");
+                throw new IllegalStateException("Descricao de agenda invalida");
             }
             return -1;
         }
         if (num < limiteinf || num > limitesup) {
-            throw new AgendaException("Descricao de agenda invalida");
+            throw new IllegalStateException("Descricao de agenda invalida");
         }
         return num;
     }
@@ -99,6 +98,15 @@ public class ConversorUtils {
             throw new NumberFormatException();
         }
         return numero;
+    }
+
+    public static double stringToDouble (String num) {
+        try {
+            double numero = Double.parseDouble(num);
+            return numero;
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException();
+        }
     }
 
 }

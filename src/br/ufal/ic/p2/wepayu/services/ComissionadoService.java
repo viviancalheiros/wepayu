@@ -13,7 +13,7 @@ public class ComissionadoService {
     public static String getVendasRealizadas (Empregado e, String dataInicial, String dataFinal) 
             throws EmpregadoNaoExisteException, DataInvalidaException {
         if (!(e instanceof Comissionado)) {
-            throw new TipoEmpregadoException("Empregado nao eh comissionado.");
+            throw new IllegalStateException("Empregado nao eh comissionado.");
         }
         Comissionado c = (Comissionado) e;
         LocalDate di = ConversorUtils.stringToDate(dataInicial, "inicial");
@@ -27,8 +27,5 @@ public class ComissionadoService {
         }
         return ConversorUtils.converteSalario(totalVendas);
     }
-
-    
-
 
 }

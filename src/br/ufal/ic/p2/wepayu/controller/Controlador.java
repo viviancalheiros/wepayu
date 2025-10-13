@@ -3,6 +3,7 @@ package br.ufal.ic.p2.wepayu.controller;
 import java.beans.XMLEncoder;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,12 +47,21 @@ public class Controlador implements Serializable {
         try {
             FileInputStream f = new FileInputStream("empregados.xml");
             XMLDecoder decoder = new XMLDecoder(f);
-            this.empregados = (ArrayList<Empregado>) decoder.readObject();
+            List<Object> dados  = (List<Object>) decoder.readObject();
+            this.empregados = (ArrayList<Empregado>) dados.get(0);
+            this.tiposAgenda = (List<String>) dados.get(1);
             decoder.close();
             f.close();
             this.status = true;
+        } catch (FileNotFoundException e) {
+            this.empregados = new ArrayList<>();
+            this.tiposAgenda = new ArrayList<>(agendasPadrao);
+            this.status = true;
         } catch (Exception e) {
             this.empregados = new ArrayList<>();
+            this.tiposAgenda = new ArrayList<>(agendasPadrao);
+            this.status = false;
+            e.printStackTrace();
         }
     }
 
@@ -64,7 +74,7 @@ public class Controlador implements Serializable {
     }
 
     public String criarEmpregado (String nome, String endereco, String tipo, String salario)
-        throws SalarioException, AtributoNaoNulo {
+        throws AtributoNaoNulo {
         
         ValidacaoUtils.verificarSalario(salario);
 
@@ -77,7 +87,7 @@ public class Controlador implements Serializable {
     }
 
     public String criarEmpregado (String nome, String endereco, String tipo, String salario, 
-            String comissao) throws SalarioException, ComissaoException {
+            String comissao) {
         
         ValidacaoUtils.verificarSalario(salario);
         Empregado e = EmpregadoService.criarEmpregado(nome, endereco, tipo, salario, comissao);
@@ -96,7 +106,7 @@ public class Controlador implements Serializable {
                     i -= 1;
                 }
             }
-            throw new TipoEmpregadoException("Nao ha empregado com esse nome.");
+            throw new IllegalStateException("Nao ha empregado com esse nome.");
     }
 
     public String getAtributoEmpregado (String emp, String atributo)
@@ -136,7 +146,7 @@ public class Controlador implements Serializable {
             throws EmpregadoNaoExisteException, DataInvalidaException {
         Empregado e = EmpregadoService.getEmpregadoPorId(emp, empregados);
         if (!(e instanceof Comissionado)) {
-            throw new TipoEmpregadoException("Empregado nao eh comissionado.");
+            throw new IllegalStateException("Empregado nao eh comissionado.");
         }
         Comissionado c = (Comissionado) e;
         LocalDate d = ConversorUtils.stringToDate(data, "data");
@@ -203,14 +213,14 @@ public class Controlador implements Serializable {
             }
             boolean v = Boolean.parseBoolean(valor);
             if (taxaSindical == null || taxaSindical.isEmpty()) {
-                throw new ComissaoException("Taxa sindical nao pode ser nula.");
+                throw new IllegalStateException("Taxa sindical nao pode ser nula.");
             }
             if (idSindicato == null || idSindicato.isEmpty()) {
-                throw new ComissaoException("Identificacao do sindicato nao pode ser nula.");
+                throw new IllegalStateException("Identificacao do sindicato nao pode ser nula.");
             }
             try {
                 double t = Double.parseDouble(taxaSindical.replace(",", "."));
-                if (t < 0) throw new ComissaoException("Taxa sindical deve ser nao-negativa.");
+                if (t < 0) throw new IllegalStateException("Taxa sindical deve ser nao-negativa.");
                 historico.salvarEstado(empregados, dadosSindicais);
                 e.setSindicalizado(v, idSindicato, t);
                 if (v) {
@@ -219,7 +229,7 @@ public class Controlador implements Serializable {
                     dadosSindicais.remove(String.valueOf(e.getId()));
                 }
             } catch (NumberFormatException ex) {
-                throw new ComissaoException("Taxa sindical deve ser numerica.");
+                throw new IllegalStateException("Taxa sindical deve ser numerica.");
             }
         }
     }
@@ -231,13 +241,13 @@ public class Controlador implements Serializable {
             if (atributo.equals("metodoPagamento")) {
                 if (valor1.equals("banco")) {
                     if (banco == null || banco.isEmpty()) {
-                        throw new TipoBancoException("Banco nao pode ser nulo.");
+                        throw new IllegalStateException("Banco nao pode ser nulo.");
                     }
                     if (agencia == null || agencia.isEmpty()) {
-                        throw new TipoBancoException("Agencia nao pode ser nulo.");
+                        throw new IllegalStateException("Agencia nao pode ser nulo.");
                     }
                     if (contaCorrente == null || contaCorrente.isEmpty()) {
-                        throw new TipoBancoException("Conta corrente nao pode ser nulo.");
+                        throw new IllegalStateException("Conta corrente nao pode ser nulo.");
                     }
                     historico.salvarEstado(empregados, dadosSindicais);
                     e.setMetodoPagamento(valor1, banco, agencia, contaCorrente);
@@ -543,10 +553,13 @@ public class Controlador implements Serializable {
     }
 
     public void encerrarSistema () {
+        List<Object> dados = new ArrayList<>();
+        dados.add(this.empregados);
+        dados.add(this.tiposAgenda);
         try {
             FileOutputStream f = new FileOutputStream("empregados.xml");
             XMLEncoder encoder = new XMLEncoder(f);
-            encoder.writeObject(empregados);
+            encoder.writeObject(dados);
             encoder.close();
             f.close();
             this.status = false;

@@ -2,7 +2,6 @@ package br.ufal.ic.p2.wepayu.services;
 
 import br.ufal.ic.p2.wepayu.Exception.Atributo.*;
 import br.ufal.ic.p2.wepayu.Exception.Empregado.*;
-import br.ufal.ic.p2.wepayu.Exception.AgendaException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.NaoSindicalizadoException;
 import br.ufal.ic.p2.wepayu.Exception.Sindicato.SindicatoException;
 import br.ufal.ic.p2.wepayu.models.*;
@@ -25,7 +24,7 @@ public class EmpregadoService {
                 if (empregados.isEmpty()) {
                     throw new EmpregadoNaoExisteException();
                 } else {
-                    throw new IdNuloException("Identificacao do empregado nao pode ser nula.");
+                    throw new IllegalStateException("Identificacao do empregado nao pode ser nula.");
                 }
             }
             for (Empregado e : empregados) {
@@ -47,7 +46,7 @@ public class EmpregadoService {
     }
 
     public static Empregado criarEmpregado (String nome, String endereco, String tipo, String salario)
-        throws SalarioException, AtributoNaoNulo {
+        throws AtributoNaoNulo {
         //cria assalariado e horista
         Empregado e;
         if (tipo.equals("assalariado")) {
@@ -57,16 +56,16 @@ public class EmpregadoService {
             e = new Horista(nome, endereco, tipo, salario);
             ValidacaoUtils.verificarEmpregado(e);
         } else if (tipo.equals("comissionado")) {
-            throw new TipoAtributoException("Tipo nao aplicavel.");
+            throw new IllegalStateException("Tipo nao aplicavel.");
         } else {
-            throw new TipoAtributoException("Tipo invalido.");
+            throw new IllegalStateException("Tipo invalido.");
         }
 
         return e;
     }
 
     public static Empregado criarEmpregado (String nome, String endereco, String tipo, String salario, 
-            String comissao) throws SalarioException, ComissaoException {
+            String comissao) {
         //cria comissionado
         ValidacaoUtils.verificarSalario(salario);
         if (tipo.equals("comissionado")) {
@@ -74,9 +73,9 @@ public class EmpregadoService {
             Comissionado c = new Comissionado(nome, endereco, tipo, salario, comissao);
             return c;
         } else if (tipo.equals("assalariado") || tipo.equals("horista")) {
-            throw new TipoAtributoException("Tipo nao aplicavel.");
+            throw new IllegalStateException("Tipo nao aplicavel.");
         } else {
-            throw new TipoAtributoException("Tipo invalido.");
+            throw new IllegalStateException("Tipo invalido.");
         }
     }
 
@@ -102,34 +101,34 @@ public class EmpregadoService {
             e.setSindicalizado(v, null, 0);
         } else if (atributo.equals("comissao")) {
             if (valor == null || valor.isEmpty()) {
-                throw new ComissaoException("Comissao nao pode ser nula.");
+                throw new IllegalStateException("Comissao nao pode ser nula.");
             }
             if (!(e instanceof Comissionado)) {
-                throw new TipoEmpregadoException("Empregado nao eh comissionado.");
+                throw new IllegalStateException("Empregado nao eh comissionado.");
             }
             double v;
             try {
                 v = Double.parseDouble(valor.replace(",", "."));
                 if (v < 0) {
-                    throw new ComissaoException("Comissao deve ser nao-negativa.");
+                    throw new IllegalStateException("Comissao deve ser nao-negativa.");
                 }
                 Comissionado c = (Comissionado) e;
                 c.setComissao(v);
             } catch (NumberFormatException ex) {
-                throw new ComissaoException("Comissao deve ser numerica.");
+                throw new IllegalStateException("Comissao deve ser numerica.");
             }
         } else if (atributo.equals("salario")) {
             if (valor == null || valor.isEmpty()) {
-                throw new SalarioException("Salario nao pode ser nulo.");
+                throw new IllegalStateException("Salario nao pode ser nulo.");
             }
             double sal;
             try {
                 sal = Double.parseDouble(valor.replace(",", "."));
             } catch (NumberFormatException ex) {
-                throw new SalarioException("Salario deve ser numerico.");
+                throw new IllegalStateException("Salario deve ser numerico.");
             } 
             if (sal < 0) {
-                throw new SalarioException("Salario deve ser nao-negativo.");
+                throw new IllegalStateException("Salario deve ser nao-negativo.");
             }
             e.setSalario(sal);
         } else if (atributo.equals("tipo")) {
@@ -141,7 +140,7 @@ public class EmpregadoService {
                 valor.equals("dinheiro") ||
                 valor.equals("banco") ||
                 valor.equals("correios"))) {
-                    throw new TipoAtributoException("Metodo de pagamento invalido.");
+                    throw new IllegalStateException("Metodo de pagamento invalido.");
             }
             e.setMetodoPagamento(
                 valor, 
@@ -153,10 +152,10 @@ public class EmpregadoService {
             if (AgendaUtils.jaExiste(agenda, valor)) {
                 e.setAgendaPagamento(valor);
             } else {
-                throw new AgendaException("Agenda de pagamento nao esta disponivel");
+                throw new IllegalStateException("Agenda de pagamento nao esta disponivel");
             }
         } else {
-            throw new TipoAtributoException("Atributo nao existe.");
+            throw new IllegalStateException("Atributo nao existe.");
         }
         return e;
     }
@@ -187,8 +186,8 @@ public class EmpregadoService {
     public static String getAtributoEmpregado (Empregado e, String atributo,
         Map<String, String> dadosSindicais, ArrayList<Empregado> empregados)
             throws EmpregadoNaoExisteException, NaoSindicalizadoException {
-        String id = String.valueOf(e.getId())
-;        if (atributo.equals("nome")) {
+        String id = String.valueOf(e.getId());
+        if (atributo.equals("nome")) {
             return e.getNome();
         } else if (atributo.equals("endereco")) {
             return e.getEndereco();
@@ -203,7 +202,7 @@ public class EmpregadoService {
                 Comissionado c = (Comissionado) e;
                 return String.valueOf(c.getComissao()).replace(".", ",");
             } else {
-                throw new ComissaoException("Empregado nao eh comissionado.");
+                throw new IllegalStateException("Empregado nao eh comissionado.");
             }
         } else if (atributo.equals("metodoPagamento")) {
             return e.getMetodoPagamento();
@@ -279,6 +278,7 @@ public class EmpregadoService {
                         return diasDesdeUltimoPag == 14;
                     }
                 } else {
+                    long diasDesdePag;
                     int intervaloSemanas = ConversorUtils.stringToInt(partes[1]);
                     int diaDaSemana = ConversorUtils.stringToInt(partes[2]);
                     
@@ -286,25 +286,23 @@ public class EmpregadoService {
                         return false;
                     }
                     int intervaloDias = intervaloSemanas * 7;
-                    LocalDate ultimo = e.getUltimoPagamentoD();
+                    LocalDate supostoPag = data.minusWeeks(intervaloSemanas);
+                    DayOfWeek diaEsperado = DayOfWeek.of(diaDaSemana);
 
-                    if (ultimo == null) {
-                        LocalDate inicio = e.getDataInicioD();
-                        if (inicio == null) return false;
-                        DayOfWeek diaEsperado = DayOfWeek.of(diaDaSemana);
-                        while (inicio.getDayOfWeek() != diaEsperado) {
-                            inicio = inicio.plusDays(1);
+                    if (supostoPag.isBefore(LocalDate.of(2005, 1, 1))) {
+                        supostoPag = e.getDataInicioD();
+                        if (supostoPag == null) return false;
+                        while (supostoPag.getDayOfWeek() != diaEsperado) {
+                            supostoPag = supostoPag.plusDays(1);
                         }
-                        if (data.isBefore(inicio)) return false;
-                        long diasDesdePag = ChronoUnit.DAYS.between(inicio, data);
-                        return diasDesdePag % intervaloDias == 0; 
+                        if (data.isBefore(supostoPag)) return false;
+                        diasDesdePag = ChronoUnit.DAYS.between(supostoPag, data);
+                        return (diasDesdePag+7) % intervaloDias == 0; 
                     } else {
-                        long diasDesdeUltimoPag = ChronoUnit.DAYS.between(ultimo, data);
-                        return diasDesdeUltimoPag == intervaloDias;
+                        diasDesdePag = ChronoUnit.DAYS.between(supostoPag, data);
+                        return diasDesdePag % intervaloDias == 0;
                     }
                 }
-                
-                
             }
         }
         return false;

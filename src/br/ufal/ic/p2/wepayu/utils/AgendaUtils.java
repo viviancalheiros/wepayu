@@ -1,7 +1,5 @@
 package br.ufal.ic.p2.wepayu.utils;
 
-import br.ufal.ic.p2.wepayu.Exception.AgendaException;
-
 import java.util.List;
 
 public class AgendaUtils {
@@ -11,7 +9,7 @@ public class AgendaUtils {
         String tipo = partes[0];
         String valor1, valor2;
         if (partes.length < 2 || partes.length > 3) {
-            throw new AgendaException("Descricao de agenda invalida");
+            throw new IllegalStateException("Descricao de agenda invalida");
         }
 
         valor1 = partes[1];
@@ -26,20 +24,20 @@ public class AgendaUtils {
                 ConversorUtils.stringToIntLim(valor2, 1, 7);
             }
         } else {
-            throw new AgendaException("Descricao de agenda invalida");
+            throw new IllegalStateException("Descricao de agenda invalida");
         }
 
         boolean estaNaAgenda = jaExiste(agenda, descricao);
         if (estaNaAgenda) {
-            throw new AgendaException("Agenda de pagamentos ja existe");
+            throw new IllegalStateException("Agenda de pagamentos ja existe");
         } else {
             agenda.add(descricao);
         }
     }
 
-    public static boolean jaExiste (List<String> agenda, String tipo) {
+    public static boolean jaExiste (List<String> agenda, String descricao) {
         for (String nome : agenda) {
-            if (nome.equals(tipo)) return true;
+            if (nome.equals(descricao)) return true;
         }
         return false;
     }
